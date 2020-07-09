@@ -41,17 +41,19 @@ class fire_server:
                 agentsocket.close()
                 print(self.getAgents())
             elif self.data.startswith(b"$agent-config$"):
-                agentsocket.sendall(b"$server-auth$")
+                print("config-requested")
                 file = open(r"C:\Users\Dracothaking\Documents/Nscope Security/Fire_controller/agentconfig.yaml", "r")
                 documents = yaml.full_load(file)
                 
                 count = 0
                 for key, value in documents.items():
                     count += 1
-                agentsocket.sendall(bytes(count))
+                    print(count)
+                agentsocket.sendall(bytes([count]))
                 for key, value in documents.items():
                     i = 0
-                    agentsocket.sendall(bytes(value[i], 'UTF-8'))
+                    command = agentsocket.sendall(bytes("firewall-cmd " + value[i], 'UTF-8'))
+                    print(f"command sent: {command}")
                     #time.sleep(1)
                     commanddata = agentsocket.recv(1024)
                     print(commanddata.decode())
