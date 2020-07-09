@@ -1,6 +1,6 @@
 #!/usr/bin/python3.6
 
-import socket, sys, struct, time, yaml, os
+import socket, sys, struct, time, yaml, os, pickle
 
 
 
@@ -44,20 +44,24 @@ class fire_server:
                 print("config-requested")
                 file = open(r"C:\Users\Dracothaking\Documents/Nscope Security/Fire_controller/agentconfig.yaml", "r")
                 documents = yaml.full_load(file)
-                
-                count = 0
+                count = 1
                 for key, value in documents.items():
                     count += 1
                     print(count)
-                agentsocket.sendall(bytes([count]))
+                
+                agentsocket.sendall(bytes(str(documents), 'UTF-8'))
                 for key, value in documents.items():
-                    i = 0
-                    command = agentsocket.sendall(bytes("firewall-cmd " + value[i], 'UTF-8'))
-                    print(f"command sent: {command}")
-                    #time.sleep(1)
-                    commanddata = agentsocket.recv(1024)
-                    print(commanddata.decode())
-                    i += 1
+                    i = 1
+                    calcval = i - 1
+                    while (i <= count):
+                        
+                        command = agentsocket.sendall(bytes("firewall-cmd " + value[calcval], 'UTF-8'))
+                        print(f"command sent: {value[calcval]}")
+                        #time.sleep(1)
+                        commanddata = agentsocket.recv(4096)
+                        print(commanddata.decode())
+                        i = i + 1
+                        calcval = calcval + 1
                 agentsocket.close()
             else:
                 print("processing error")
