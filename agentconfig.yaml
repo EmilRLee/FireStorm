@@ -1,6 +1,0 @@
----
-
-firewall-cmd:
-  - --add-port=80/tcp --permanent
-  - --reload
-  - --list-all
