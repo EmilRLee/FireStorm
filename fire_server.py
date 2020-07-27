@@ -42,35 +42,11 @@ class fire_server:
                 agentsocket.close()
                 print(self.getAgents())
             elif self.data.startswith(b"$agent-config$"):
+            #sent from agents to get initial configuration when it starts up.    
                 print("config-requested")
                 if address[0] in self.agent_configs:
                     print("reading configuration from {}.yaml".format(address[0]))
-                    file = open(r"C:\Users\Dracothaking\Documents/Nscope Security/Fire_controller/Firecontroller/{}.yaml".format(address[0]), "r")
-                    documents = yaml.full_load(file)
-                    count = 1
-                    for key, value in documents.items():
-                        count += 1
-                        print(count)
-                    
-                    #agentsocket.sendall(bytes(str(documents), 'UTF-8'))
-                    print(documents)
-                    for key, value in documents.items():
-                        i = 1
-                        calcval = i - 1
-                        while (i <= count):
-                            
-                            command = agentsocket.sendall(bytes("firewall-cmd " + value[calcval], 'UTF-8'))
-                            print(f"command sent: {value[calcval]}")
-                            #time.sleep(1)
-                            commanddata = agentsocket.recv(4096)
-                            print(commanddata.decode())
-                            i = i + 1
-                            calcval = calcval + 1
-                    agentsocket.close()
-                else:
-                    
-                    file = open(r"C:\Users\Dracothaking\Documents/Nscope Security/Fire_controller/Firecontroller/baseconfig.yaml", "r")
-                        
+                    file = open(r"./agents/{}.yaml".format(address[0]), "r")
                     documents = yaml.load(file)
                     count = 1
                     command = 'iptables'
@@ -81,7 +57,9 @@ class fire_server:
                             command = command + f' -t {value}'
                         elif key == "action":
                             if value == "append":
-                                command = command + f' -D'
+                                command = command + f' -A'
+                        elif key == "chain":
+                            command = command + ' {}'.format(value.upper())
                         elif key == "match":
                             vals = 0
                             for i in value:
@@ -106,9 +84,22 @@ class fire_server:
                                         command = command + f' -s {s}'
                                 except KeyError:
                                     pass
+                                try:
+                                    if value[vals].get('destination'):
+                                        d = value[vals].get('destination')
+                                        print(value[vals].get('destination'))
+                                        command = command + f' -d {d}'
+                                except KeyError:
+                                    pass
+                                try:
+                                    if value[vals].get('module'):
+                                        m = value[vals].get('module')
+                                        print(value[vals].get('module'))
+                                        command = command + f' -m {m}'
+                                except KeyError:
+                                    pass
                                 vals += 1
-                        elif key == 'target':
-                            command = command + ' -j {}'.format(upper(value))
+                
                         
                     #agentsocket.sendall(bytes(str(documents), 'UTF-8'))
                     print(documents)
@@ -120,10 +111,71 @@ class fire_server:
                     print(commanddata.decode())
 
                     file.close()
-                    print("creating config file for new agent")
-                    #creates agents own config file
-                    copy = open(r"C:\Users\Dracothaking\Documents/Nscope Security/Fire_controller/Firecontroller/baseconfig.yaml", "r")
-                    with open("C:\\Users\\Dracothaking\\Documents/Nscope Security/Fire_controller/Firecontroller/{}.yaml".format(address[0]), "w+") as config:
+                    agentsocket.close()
+                else:
+                    
+                    file = open(r"./agents/baseconfig.yaml", "r")
+                        
+                    documents = yaml.load(file)
+                    count = 1
+                    command = 'iptables'
+                    for key, value in documents.items():
+                        count += 1
+                        
+                        if key == "table":
+                            command = command + f' -t {value}'
+                        elif key == "action":
+                            if value == "append":
+                                command = command + f' -A'
+                        elif key == "chain":
+                            command = command + ' {}'.format(value.upper())
+                        elif key == "match":
+                            vals = 0
+                            for i in value:
+                                try:
+                                    if value[vals].get('protocol'):
+                                        p = value[vals].get('protocol')
+                                        print(value[vals].get('protocol'))
+                                        command = command + f' -p {p}'
+                                except KeyError:
+                                    pass
+                                try:
+                                    if value[vals].get('dport'):
+                                        d = value[vals].get('dport')
+                                        print(value[vals].get('dport'))
+                                        command = command + f' --dport {d}'
+                                except KeyError:
+                                    pass
+                                try:
+                                    if value[vals].get('source'):
+                                        s = value[vals].get('source')
+                                        print(value[vals].get('source'))
+                                        command = command + f' -s {s}'
+                                except KeyError:
+                                    pass
+
+                                vals += 1
+                        elif key == 'target':
+                               command = command + ' -j {}'.format(value.upper())
+                        
+                    #agentsocket.sendall(bytes(str(documents), 'UTF-8'))
+                    print(documents)
+        
+                    agentcommand = agentsocket.sendall(bytes(command, 'UTF-8'))
+                    print(f"command sent: {command}")
+                    #time.sleep(1)
+                    commanddata = agentsocket.recv(4096)
+                    print(commanddata.decode())
+                    agentconfig = agentsocket.recv(1024)
+                    print(agentconfig.decode())
+                    file.close()
+                    #creates agents iptables config file for new agent
+                    file1 = open(r"./agents/{}.rules".format(address), "w+")
+                    file1.write(agentconfig)
+                    print("creating yaml config file for new agent")
+                    #creates agents yaml config file for new agent
+                    copy = open(r"./agents/baseconfig.yaml", "r")
+                    with open("{}.yaml".format(address[0]), "w+") as config:
                         for line in copy:
                             config.write(line)
 
@@ -142,17 +194,24 @@ class fire_server:
                 self.fire_controller = address
                 print(f"agent config requested from {address}")
                 agentsocket.sendall(b"agent config request recieved")
-                #listen for agent ip recieved from firecontroller
+                #listen for agent IP recieved from firecontroller
                 self.data = agentsocket.recv(1024)
                 agent = self.data.decode()
+                #process agent IP
                 if agent in self.fire_agents:
-                    agentconf = open(r"{}.yaml".format(agent), "r")
-                    agentsocket.sendall(bytes(f"{agentconf.read()}", "UTF-8"))
+                    agentyaml = open(r"./agents/{}.yaml".format(agent), "r")
+                    agentsocket.sendall(bytes(f"--yaml:\n {agentyaml.read()}\n : yaml -- ", "UTF-8"))
+                    agentyaml.close()
+                    agentraw = open(r"./agents/{}.rules".format(agent), "r")
+                    agentsocket.sendall(bytes(f"--iptable:\n {agentraw.read()}\n :iptable-- ", "UTF-8"))
                     print(f"agent = {agent}")
                     
                 else:
                     print(f'agent: {agent} not registered')
                     agentsocket.sendall(b"agent not registered")
+            elif self.data.startswith(b"$server-stop$"):
+                agentsocket.sendall(b"shutdown signal recieved")
+                sys.exit()
             else:
                 print("processing error")
 

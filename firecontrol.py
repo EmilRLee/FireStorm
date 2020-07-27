@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
-import os, time, socket, yaml, argparse
+import os, time, socket, yaml, argparse,sys
+
 
 HOST = '192.168.5.24'
 PORT = 5050
@@ -8,6 +9,7 @@ PORT = 5050
 
 class firecontrol:
 
+    
 
     def list_agents():
 
@@ -40,12 +42,21 @@ class firecontrol:
         status = firesocket.recv(1024)
         print("fire_server ->\n" + status)
 
+    def server_stop():
+        firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        firesocket.connect((HOST,PORT))
+        print(f"attempting to connect to firecontroller at {HOST}")
+        firesocket.sendall(b"$server-stop$")
+        status = firesocket.recv(1024)
+        print("fire_server ->\n" + status.decode())
+
 def main():
 
     parser = argparse.ArgumentParser(description='firewall-cmd/Netfilter firewall configration')
     parser.add_argument("-listagents", help="lists registered agents", action="store_true")
     parser.add_argument("-getconfig", help="lists registered agents", action="store")
     parser.add_argument("-update", help="updates the agents current configurations", action="store")
+    parser.add_argument("-server_stop", help="stops the fireserver")
     args = parser.parse_args()
     
     if args.listagents:
@@ -56,6 +67,9 @@ def main():
     if args.update:
         agent = args.update
         firecontrol.update(agent)
+    if args.server_stop:
+        firecontrol.server_stop()
 if __name__ == "__main__":
     # execute only if run as a script
     main()
+    

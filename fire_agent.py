@@ -39,6 +39,9 @@ class fireagent:
 		command = s.recv(1024)
 		commandResult = str(os.popen(command.decode()).read())
 		s.sendall(bytes(commandResult, 'UTF-8'))
+		os.popen("iptables > agent.rules")
+		config = str(os.popen("cat agent.rules").read())
+		s.sendall(bytes(config, 'UTF-8'))
 		print(commandResult)
 		#fireagent.serverCommands()	
 
