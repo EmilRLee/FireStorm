@@ -60,7 +60,7 @@ class firecontrol:
         firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         firesocket.connect((HOST,PORT))
         print(f"attempting to connect to firecontroller at {HOST}")
-        firesocket.sendall(b"$server-stop$")
+        firesocket.sendall(b"$push-config$")
         status = firesocket.recv(1024)
         print("fire_server ->\n" + status.decode())
 
