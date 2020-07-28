@@ -31,8 +31,10 @@ class firecontrol:
         print("fire_server -> " + status.decode())
         #send agent ip to retrieved its configs
         firesocket.sendall(bytes(str(agent), 'UTF-8'))
-        agent_config = firesocket.recv(1024)
+        agent_config = firesocket.recv(65535)
         print("fire_server -> " + agent_config.decode())
+        agent_config = firesocket.recv(65535)
+        print("fire_server ->" + agent_config.decode())
 
     def update(agent):
         firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

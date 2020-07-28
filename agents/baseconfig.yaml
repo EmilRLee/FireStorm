@@ -1,7 +1,7 @@
 ---
 
 table: filter
-action: append
+action: insert
 chain: input
 match:
   - protocol: tcp
