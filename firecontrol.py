@@ -56,7 +56,7 @@ class firecontrol:
         status = firesocket.recv(1024)
         print("fire_server ->\n" + status.decode())
 
-    def pushconfig(agent):
+    def pushconfig(config):
         firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         firesocket.connect((HOST,PORT))
         print(f"attempting to connect to firecontroller at {HOST}")
@@ -64,19 +64,15 @@ class firecontrol:
         status = firesocket.recv(1024)
         print("fire_server ->\n" + status.decode())
 
-        if agent.endswith(".yaml"):
-            with open("{}".format(agent), "rb") as file:
-                bytestosend = file.read(65535)
-                firesocket.send(bytestosend)
-        elif agent.endswith(".iptable"):
-            with open("{}".format(agent), "rb") as file:
-                bytestosend = file.read(65535)
-                firesocket.send(bytestosend)
+        with open("{}".format(agent), "rb") as file:
+            bytestosend = file.read(65535)
+            firesocket.send(bytestosend)
+        print("file sent")
 
         status = firesocket.recv(1024)
         print("fire_server ->\n" + status.decode())
 
-        
+
 def main():
 
     parser = argparse.ArgumentParser(description='firewall-cmd/Netfilter firewall configration')
@@ -91,9 +87,9 @@ def main():
     if args.getconfig:
         agent = args.getconfig
         firecontrol.get_config(agent)
-    if args.update:
-        agent = args.update
-        firecontrol.update(agent)
+    if args.pushconfig:
+        config = args.pushconfig
+        firecontrol.pushconfig(config)
     if args.server_stop:
         firecontrol.server_stop()
 if __name__ == "__main__":
