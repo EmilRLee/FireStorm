@@ -264,14 +264,14 @@ class fire_server:
                 agentsocket.sendall(b"configuration push recieved. processing .....")
                 filename = agentsocket.recv(1024)
                 config = agentsocket.recv(65535)
-                if "iptable" in filename:
-                    with open("./agents/{}".format(config), "wb") as file:
+                if b"iptable" in filename:
+                    with open("./agents/{}".format(filename.decode()), "wb") as file:
                         file.write(config)
                     agentsocket.sendall(bytes("configuration successfully saved"))
-                elif "yaml" in filename:
-                    with open("./agents/{}".format(config), "wb") as file:
+                elif b"yaml" in filename:
+                    with open("./agents/{}".format(filename.decode()), "wb") as file:
                         file.write(config)
-                    agentsocket.sendall(bytes("configuration successfully saved"))
+                    agentsocket.sendall(b"configuration successfully saved")
         
             else:
                 print("processing error")
