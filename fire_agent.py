@@ -36,14 +36,25 @@ class fireagent:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.connect((HOST,PORT))
 		s.sendall(b"$agent-config$")
+		check = s.recv(1024)
+		print(check.decode())
+		checkstatus = os.system(check.decode())
+		print(f'check: {checkstatus}')
+		if checkstatus == 0:
+			print('true')
+			s.sendall(bytes('true', 'UTF-8'))
+			#print(str(checkstatus))
+		else:	
+			s.sendall(bytes('false', 'UTF-8'))
+		print('done')
 		command = s.recv(1024)
-		commandResult = str(os.popen(command.decode()).read())
-		s.sendall(bytes(commandResult, 'UTF-8'))
+		os.popen(command.decode())
+		#s.sendall(bytes(commandResult, 'UTF-8'))
 		os.popen("iptables-save > agent.rules")
-		config = str(os.popen("cat agent.rules").read())
-		s.sendall(bytes(config, 'UTF-8'))
-		print(commandResult)
-		#fireagent.serverCommands()	
+		time.sleep(3)
+		with open("agent.rules", "rb") as rule:
+			bytestosend = rule.read(65535)
+			s.send(bytestosend)
 
 	def serverCommands():
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
