@@ -37,8 +37,8 @@ class firecontrol:
             file.write(agent_config.decode())
         agent_config = firesocket.recv(65535)
         print("fire_server ->" + agent_config.decode())
-        with open("{}.iptable".format(agent), 'w+') as file:
-            file.write(agent_config.decode())
+        with open("{}.iptable".format(agent), 'w+') as file1:
+            file1.write(agent_config.decode())
 
     def update(agent):
         firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -56,12 +56,33 @@ class firecontrol:
         status = firesocket.recv(1024)
         print("fire_server ->\n" + status.decode())
 
+    def pushconfig(agent):
+        firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        firesocket.connect((HOST,PORT))
+        print(f"attempting to connect to firecontroller at {HOST}")
+        firesocket.sendall(b"$server-stop$")
+        status = firesocket.recv(1024)
+        print("fire_server ->\n" + status.decode())
+
+        if agent.endswith(".yaml"):
+            with open("{}".format(agent), "rb") as file:
+                bytestosend = file.read(65535)
+                firesocket.send(bytestosend)
+        elif agent.endswith(".iptable"):
+            with open("{}".format(agent), "rb") as file:
+                bytestosend = file.read(65535)
+                firesocket.send(bytestosend)
+
+        status = firesocket.recv(1024)
+        print("fire_server ->\n" + status.decode())
+
+        
 def main():
 
     parser = argparse.ArgumentParser(description='firewall-cmd/Netfilter firewall configration')
     parser.add_argument("-listagents", help="lists registered agents", action="store_true")
     parser.add_argument("-getconfig", help="lists registered agents", action="store")
-    parser.add_argument("-update", help="updates the agents current configurations", action="store")
+    parser.add_argument("-pushconfig", help="updates the agents current configurations", action="store")
     parser.add_argument("-server_stop", help="stops the fireserver")
     args = parser.parse_args()
     
