@@ -63,8 +63,9 @@ class firecontrol:
         firesocket.sendall(b"$push-config$")
         status = firesocket.recv(1024)
         print("fire_server ->\n" + status.decode())
-
-        with open("{}".format(agent), "rb") as file:
+        #need to send the name of file first then file.
+        firesocket.sendall(bytes(config, 'UTF-8'))
+        with open("{}".format(config), "rb") as file:
             bytestosend = file.read(65535)
             firesocket.send(bytestosend)
         print("file sent")
