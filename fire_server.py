@@ -261,13 +261,14 @@ class fire_server:
                 agentsocket.sendall(b"shutdown signal recieved")
                 sys.exit()
             elif self.data.startswith(b"$push-config$"):
-                config = agentsocket.recv(65535)
                 agentsocket.sendall(b"configuration push recieved. processing .....")
-                if config.endswith(".iptable"):
+                filename = agentsocket.recv(1024)
+                config = agentsocket.recv(65535)
+                if "iptable" in filename:
                     with open("./agents/{}".format(config), "wb") as file:
                         file.write(config)
                     agentsocket.sendall(bytes("configuration successfully saved"))
-                elif config.endswith(".yaml"):
+                elif "yaml" in filename:
                     with open("./agents/{}".format(config), "wb") as file:
                         file.write(config)
                     agentsocket.sendall(bytes("configuration successfully saved"))
