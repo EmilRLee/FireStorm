@@ -254,6 +254,7 @@ class fire_server:
                     agentraw = open(r"./agents/{}.rules".format(agent), "r")
                     agentsocket.sendall(bytes(f"/////iptable//////\n {agentraw.read(65535)}\n :iptable-- ", "UTF-8"))
                     print(f"agent = {agent}")
+        
                     
                 else:
                     print(f'agent: {agent} not registered')
