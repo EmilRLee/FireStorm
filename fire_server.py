@@ -268,11 +268,20 @@ class fire_server:
                     with open("./agents/{}".format(filename.decode()), "wb") as file:
                         file.write(config)
                     agentsocket.sendall(bytes("configuration successfully saved"))
+                    f = filename.split(".iptable")
+                    print(f"connecting to agent @ {f[0]}")
+                    agentsocket.connect((f[0],5050))
+                    agentsocket.sendall(b"$server-auth$")
+                    time.sleep(1)
+                    agentsocket.sendall(bytes("iptables-restore {}".format(filename)))
+                    status = agentsocket.recv(1024)
+                    print(f"status: {status}")
                 elif b"yaml" in filename:
                     with open("./agents/{}".format(filename.decode()), "wb") as file:
                         file.write(config)
                     agentsocket.sendall(b"configuration successfully saved")
-        
+                    #cancel socket and connect to agent to notifiy agent of new firewall configuration.
+                    
             else:
                 print("processing error")
 
