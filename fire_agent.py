@@ -50,9 +50,9 @@ class fireagent:
 		command = s.recv(1024)
 		os.popen(command.decode())
 		#s.sendall(bytes(commandResult, 'UTF-8'))
-		os.popen("iptables-save > agent.rules")
+		os.popen("iptables-save > agent.iptable")
 		time.sleep(3)
-		with open("agent.rules", "rb") as rule:
+		with open("agent.iptable", "rb") as rule:
 			bytestosend = rule.read(65535)
 			s.send(bytestosend)
 
