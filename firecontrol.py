@@ -33,9 +33,11 @@ class firecontrol:
         firesocket.sendall(bytes(str(agent), 'UTF-8'))
         agent_config = firesocket.recv(65535)
         print("fire_server -> " + agent_config.decode())
+        with open("{}.yaml".format(agent), 'w+') as file:
+            file.write(agent_config.decode())
         agent_config = firesocket.recv(65535)
         print("fire_server ->" + agent_config.decode())
-        with open("{}.config".format(agent), 'w+') as file:
+        with open("{}.iptable".format(agent), 'w+') as file:
             file.write(agent_config.decode())
 
     def update(agent):
