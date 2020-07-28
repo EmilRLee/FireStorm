@@ -262,6 +262,7 @@ class fire_server:
                 sys.exit()
             elif self.data.startswith(b"$push-config$"):
                 config = agentsocket.recv(65535)
+                agentsocket.sendall(b"configuration push recieved. processing .....")
                 if config.endswith(".iptable"):
                     with open("./agents/{}".format(config), "wb") as file:
                         file.write(config)
