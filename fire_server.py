@@ -216,7 +216,7 @@ class fire_server:
                     #commanddata = agentsocket.recv(4096)
                     #print(commanddata.decode())
                     #creates agents iptables config file for new agent
-                    with open("./agents/{}.rules".format(address[0]), "wb") as create:
+                    with open("./agents/{}.iptable".format(address[0]), "wb") as create:
                         agentconfig = agentsocket.recv(65535)
                         totalRecv = len(agentconfig)
                         print(totalRecv)
@@ -249,19 +249,28 @@ class fire_server:
                 #process agent IP
                 if agent in self.fire_agents:
                     agentyaml = open(r"./agents/{}.yaml".format(agent), "r")
-                    agentsocket.sendall(bytes(f"/////yaml/////\n {agentyaml.read(65535)}\n : yaml -- ", "UTF-8"))
+                    agentsocket.sendall(bytes(agentyaml.read(65535), "UTF-8"))
                     agentyaml.close()
-                    agentraw = open(r"./agents/{}.rules".format(agent), "r")
-                    agentsocket.sendall(bytes(f"/////iptable//////\n {agentraw.read(65535)}\n :iptable-- ", "UTF-8"))
-                    print(f"agent = {agent}")
-        
-                    
+                    agentraw = open(r"./agents/{}.iptable".format(agent), "r")
+                    agentsocket.sendall(bytes(agentraw.read(65535), "UTF-8"))
+                    print(f"agent = {agent}")   
                 else:
                     print(f'agent: {agent} not registered')
                     agentsocket.sendall(b"agent not registered")
             elif self.data.startswith(b"$server-stop$"):
                 agentsocket.sendall(b"shutdown signal recieved")
                 sys.exit()
+            elif self.data.startswith(b"$push-config$"):
+                config = agentsocket.recv(65535)
+                if config.endswith(".iptable"):
+                    with open("./agents/{}".format(config), "wb") as file:
+                        file.write(config)
+                    agentsocket.sendall(bytes("configuration successfully saved"))
+                elif config.endswith(".yaml"):
+                    with open("./agents/{}".format(config), "wb") as file:
+                        file.write(config)
+                    agentsocket.sendall(bytes("configuration successfully saved"))
+        
             else:
                 print("processing error")
 
