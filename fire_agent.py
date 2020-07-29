@@ -55,6 +55,7 @@ class fireagent:
 		with open("agent.iptable", "rb") as rule:
 			bytestosend = rule.read(65535)
 			s.send(bytestosend)
+		s.close()
 
 	def serverCommands():
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
