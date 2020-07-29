@@ -65,12 +65,23 @@ class fireagent:
 			(serversocket, address) = agentsocket.accept()
 			auth = serversocket.recv(1024)
 			if auth.startswith(b"$server-auth$"):
-				commands = serversocket.recv(1024)
-				decoded = commands.decode()
-				for i in commands:
+				configtype = serversocket.recv(1024)
+				if configtype == b'yaml':
+					check = s.recv(1024)
+					print(check.decode())
+					checkstatus = os.system(check.decode())
+					print(f'check: {checkstatus}')
+					if checkstatus == 0:
+						print('true')
+						s.sendall(bytes('true', 'UTF-8'))
+						#print(str(checkstatus))
+					else:	
+						s.sendall(bytes('false', 'UTF-8'))
+					print('done')
 					command = s.recv(1024)
-					print("recieved command from server")
-					#time.sleep(1)
+					os.popen(command.decode())
+				elif configtype == b'iptable':	
+					command = agentsocket.recv(1024)
 					commandResult = str(os.popen(command.decode()).read())
 					s.sendall(bytes(commandResult, 'UTF-8'))
 				print(commandResult)
