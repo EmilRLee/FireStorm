@@ -78,7 +78,7 @@ class fireagent:
 					else:	
 						serversocket.sendall(bytes('false', 'UTF-8'))
 					print('done')
-					command = s.recv(1024)
+					command = serversocket.recv(1024)
 					os.popen(command.decode())
 				elif configtype == b'iptable':	
 					command = agentsocket.recv(1024)
