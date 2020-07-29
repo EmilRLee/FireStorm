@@ -81,10 +81,13 @@ class fireagent:
 					command = serversocket.recv(1024)
 					os.popen(command.decode())
 				elif configtype == b'iptable':	
+					configfile = agentsocket.recv(65535)
+					with open("agent.iptable", "wb") as file:
+						file.write(configfile)
 					command = agentsocket.recv(1024)
 					commandResult = str(os.popen(command.decode()).read())
 					serversocket.sendall(bytes(commandResult, 'UTF-8'))
-				print(commandResult)
+					print(commandResult)
 				fireagent.agentPoll()
 
 fireagent.agentPoll()
