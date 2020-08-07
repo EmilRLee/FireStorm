@@ -31,21 +31,10 @@ class fire_server:
     def heartbeat(self,agentinfo):
         while True:
             time.sleep(60)
-            try:
-                serversocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                serversocket.connect((agentinfo,5050))
-                serversocket.close()
-                if agentinfo not in self.active_agents:
-                    self.active_agents.append(agentinfo)
-                print(self.active_agents)
-                if agentinfo in self.inactive_agents:
-                    self.inactive_agents.remove(agentinfo)
-            except socket.error:
-                print(f'agent {agentinfo} has no response')
-                if agentinfo in self.active_agents:
-                    self.active_agents.remove(agentinfo)
-                    if agentinfo not in self.inactive_agents:
-                        self.inactive_agents.append(agentinfo)
+        
+            #checking agent poll status
+            if agentinfo not in self.active_agents:
+                self.inactive_agents.append(agentinfo)
 
     def socket_comms(self):       
         while True:
@@ -63,6 +52,7 @@ class fire_server:
                 print("polling recieved")
                 agentsocket.sendall(b"polling recieved")
                 self.data = agentsocket.recv(1024)
+                #agent sends host info vvv
                 data = self.data.decode()
                 status = self.agentCheck(data)
                 agentsocket.sendall(status)
@@ -71,9 +61,11 @@ class fire_server:
             elif self.data.startswith(b"$agent-config$"):
             #sent from agents to get initial configuration when it starts up.    
                 print("config-requested")
-                if address[0] in self.agent_configs:
-                    print("reading configuration from {}.yaml".format(address[0]))
-                    file = open("./agents/{}.yaml".format(address[0]), "r")
+                hostip = agentsocket.recv(1024)
+                hostip = hostip.decode()
+                if hostip in self.agent_configs:
+                    print("reading configuration from {}.yaml".format(hostip))
+                    file = open("./agents/{}.yaml".format(hostip), "r")
                     documents = yaml.load(file)
                     count = 1
                     command = 'iptables'
@@ -243,7 +235,7 @@ class fire_server:
                     #commanddata = agentsocket.recv(4096)
                     #print(commanddata.decode())
                     #creates agents iptables config file for new agent
-                    with open("./agents/{}.iptable".format(address[0]), "wb") as create:
+                    with open("./agents/{}.iptable".format(hostip), "wb") as create:
                         agentconfig = agentsocket.recv(65535)
                         totalRecv = len(agentconfig)
                         print(totalRecv)
@@ -251,15 +243,15 @@ class fire_server:
                     print("creating yaml config file for new agent")
                     #creates agents yaml config file for new agent
                     copy = open(r"./agents/baseconfig.yaml", "r")
-                    with open("./agents/{}.yaml".format(address[0]), "w+") as config:
+                    with open("./agents/{}.yaml".format(hostip), "w+") as config:
                         for line in copy:
                             config.write(line)
 
-                    self.agent_configs.append(address[0])
+                    self.agent_configs.append(hostip)
                     agentsocket.close()
             elif self.data.startswith(b"$list-agent$"):
                 print(f"agentlist requested from {address}")
-                agentsocket.sendall(b"agent config push recieved")
+                agentsocket.sendall(b"agent list recieved")
                 agents = self.getAgents()
                 agentscount = len(agents)
                 if agentscount > 0 :
