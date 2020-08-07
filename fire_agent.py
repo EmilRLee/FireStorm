@@ -71,27 +71,30 @@ class fireagent:
 			pollsig = b"$agent-poll$"
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			print(f"attempting to connect to firecontroller at {HOST}")
-			s.connect((HOST,PORT))
-			print("connection successful")
-			s.sendall(pollsig)
-			print("polling firecontroller")
-			data = s.recv(1024)
-			if not data:
-				print("polling failed, cannot find firecontroller")
-			else:
+			try:
+				s.connect((HOST,PORT))
+				print("connection successful")
+				s.sendall(pollsig)
+				print("polling firecontroller")
+				data = s.recv(1024)
+				if not data:
+					print("polling failed, cannot find firecontroller")
+				else:
 				
-				print("sending hostinfo ipaddress")
-				s.sendall(fireagent.getHostInfo(interface))
-				print("firecontroller msg ->" + repr(data.decode()))
-				status = s.recv(1024)
-				print("firecontroller msg ->" + repr(status.decode()))			
-			s.close()
+					print("sending hostinfo ipaddress")
+					s.sendall(fireagent.getHostInfo(interface))
+					print("firecontroller msg ->" + repr(data.decode()))
+					status = s.recv(1024)
+					print("firecontroller msg ->" + repr(status.decode()))
+				s.close()
+			except socket.error:
+				pass			
 			time.sleep(60)
 
 
 	def serverCommands(interface):
 		
-		t = threading.Timer(20, fireagent.agentPoll,[interface])
+		t = threading.Timer(20, fireagent.agentPoll,[agentinfo])
         
 
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
