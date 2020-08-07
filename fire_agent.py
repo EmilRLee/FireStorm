@@ -14,7 +14,7 @@ class fireagent:
 
 		for key, value in inet_addr.items():
 			if key == 'addr':
-				return bytes(value, 'UTF-8')	
+				return bytes(value,'UTF-8')	
 
 
 		return ipaddress
@@ -33,7 +33,8 @@ class fireagent:
 		else:
 			
 			print("sending hostinfo ipaddress")
-			s.sendall(fireagent.getHostInfo(interface))
+			hostip = fireagent.getHostInfo(interface)
+			s.sendall(hostip)
 			print("firecontroller msg ->" + repr(data.decode()))
 			status = s.recv(1024)
 			print("firecontroller msg ->" + repr(status.decode()))			
@@ -42,6 +43,7 @@ class fireagent:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.connect((HOST,PORT))
 		s.sendall(b"$agent-config$")
+		s.sendall(hostip)
 		check = s.recv(1024)
 		print(check.decode())
 		checkstatus = os.system(check.decode())
@@ -89,7 +91,7 @@ class fireagent:
 
 	def serverCommands(interface):
 		
-		t = threading.Timer(20, fireagent.agentPoll,[interface])
+		t = threading.Timer(20, fireagent.agentPoll,[agentinfo])
         
 
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -136,7 +138,7 @@ def main():
 	if args.interface:
 		interface = args.interface
 		fireagent.agentInit(interface)
-		fireagent.serverCommands(interface)
+		fireagent.serverCommands()
 	
 
 if __name__ == "__main__":
