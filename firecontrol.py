@@ -5,10 +5,10 @@ from flask import Flask, request, render_template
 
 
 PORT = 5050
-HOST = '192.168.5.24'
+#HOST = '192.168.5.24'
 app = Flask(__name__,template_folder='ui/templates', static_folder='ui/static')
 
-def webvars():
+def webvars(HOST):
     firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     firesocket.connect((HOST,PORT))
     firesocket.sendall(b"$init-web$")
@@ -52,9 +52,9 @@ def webvars():
 
 
 
-@app.route("/home")
+@app.route("/home",)
 def web_home():
-    HOST, active_agents, inactive_agents, serverName, fire_agents, AgentCount = webvars()
+    HOST, active_agents, inactive_agents, serverName, fire_agents, AgentCount = webvars(app.config['HOST'])
     if active_agents != 'none':
         activeCount = len(active_agents)
     else:
@@ -74,6 +74,7 @@ def web_home():
 
 @app.route("/listagents")
 def web():
+    #### xxx Needs ATTENTION vvvvvvvvvvvvvv need to change to platform agnostic
     agents = subprocess.run("c:/Users/DracoThaKing/AppData/Local/Programs/Python/Python38-32/python.exe firecontrol.py -listagents", check=True, stdout=subprocess.PIPE , universal_newlines=True)
 
     return agents.stdout
@@ -151,7 +152,7 @@ def main():
     parser = argparse.ArgumentParser(description='firewall-cmd/Netfilter firewall configration')
     parser.add_argument("-listagents", help="lists registered agents", action="store_true")
     parser.add_argument("-getconfig", help="lists registered agents", action="store")
-    parser.add_argument("-pushconfig", help="updates the agents current configurations", action="store")
+    parser.add_argument("-pushconfig", help="configuration file to send", action="store")
     parser.add_argument("-server_stop", help="stops the fireserver", action="store_true")
     parser.add_argument("--web", help="initiates the web app interface. The app provides a graphical ui for configuring firewalls", action="store_true")
     parser.add_argument("-server", help="supply the fireserver IP", action="store")
@@ -170,6 +171,7 @@ def main():
     if args.server_stop:
         firecontrol.server_stop(HOST)
     if args.web:
+        app.config['HOST'] = HOST
         app.run() 
         # --- testcase --> run webvars()        
 
