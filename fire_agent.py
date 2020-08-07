@@ -101,7 +101,7 @@ class fireagent:
 
 def main():
 	parser = argparse.ArgumentParser(description='firewall-cmd/Netfilter firewall configration')
-	parser.add_argument("interface", help="interface the agent will listen for fire server", action="store")
+	parser.add_argument("-interface", help="interface the agent will listen for fire server", action="store")
 	args = parser.parse_args()
 	if args.interface:
 		interface = args.interface
