@@ -1,6 +1,6 @@
 #!/usr/bin/python3.6
 
-import socket, sys, struct, os, time
+import socket, sys, struct, os, time, pickle, argparse, netifaces
 
 HOST = '192.168.5.24'
 PORT = 5050
@@ -8,12 +8,18 @@ PORT = 5050
 class fireagent:
 
 
-	def getHostInfo():
-		hostname = socket.gethostname()
-		ipaddress = bytes(socket.gethostbyname(hostname),'utf8')
+	def getHostInfo(interface):
+		addr = netifaces.ifaddresses(interface)
+		inet_addr = addr[netifaces.AF_INET][0]
+
+		for key, value in inet_addr.items():
+			if key == 'addr':
+				return value	
+
+
 		return ipaddress
 
-	def agentPoll():
+	def agentPoll(interface):
 		pollsig = b"$agent-poll$"
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		print(f"attempting to connect to firecontroller at {HOST}")
@@ -26,8 +32,8 @@ class fireagent:
 			print("polling failed, cannot find firecontroller")
 		else:
 			
-			print("sending hostinfo")
-			s.sendall(fireagent.getHostInfo())
+			print("sending hostinfo ipaddress")
+			s.sendall(fireagent.getHostInfo(interface))
 			print("firecontroller msg ->" + repr(data.decode()))
 			status = s.recv(1024)
 			print("firecontroller msg ->" + repr(status.decode()))			
@@ -57,7 +63,9 @@ class fireagent:
 			s.send(bytestosend)
 		s.close()
 
-	def serverCommands():
+	def serverCommands(interface):
+		
+		
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		bind = agentsocket.bind((socket.gethostname(),5050))
 		agentsocket.listen()
@@ -91,7 +99,17 @@ class fireagent:
 				serversocket.close()
 				fireagent.agentPoll()
 
-fireagent.agentPoll()
-fireagent.serverCommands()
+def main():
+
+	parser.add_argument("interface", help="interface the agent will listen for fire server", action="store")
+
+	if args.interface:
+		interface = args.interface
+		fireagent.agentPoll(interface)
+		fireagent.serverCommands()
+	
+
+if __name__ == "__main__":
+    main()
 
 
