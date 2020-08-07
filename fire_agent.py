@@ -67,7 +67,7 @@ class fireagent:
 		
 		
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		bind = agentsocket.bind((socket.gethostname(),5050))
+		bind = agentsocket.bind((fireagent.getHostInfo(interface),5050))
 		agentsocket.listen()
 		while True:
 			print("waiting on server commands")
@@ -106,7 +106,7 @@ def main():
 	if args.interface:
 		interface = args.interface
 		fireagent.agentPoll(interface)
-		fireagent.serverCommands()
+		fireagent.serverCommands(interface)
 	
 
 if __name__ == "__main__":
