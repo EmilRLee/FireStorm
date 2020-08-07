@@ -129,8 +129,9 @@ class fireagent:
 				fireagent.agentInit()
 
 def main():
-
-	parser.add_argument("interface", help="interface the agent will listen for fire server", action="store")
+	parser = argparse.ArgumentParser(description='firecontrol agent')
+	parser.add_argument("-interface", help="interface the agent will listen for fire server", action="store")
+	args = parser.parse_args()
 
 	if args.interface:
 		interface = args.interface
