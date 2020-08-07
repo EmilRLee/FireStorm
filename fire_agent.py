@@ -14,7 +14,7 @@ class fireagent:
 
 		for key, value in inet_addr.items():
 			if key == 'addr':
-				return value	
+				return bytes(value)	
 
 
 		return ipaddress
