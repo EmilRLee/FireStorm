@@ -14,7 +14,7 @@ class fireagent:
 
 		for key, value in inet_addr.items():
 			if key == 'addr':
-				return bytes(value)	
+				return bytes(value, 'UTF-8')	
 
 
 		return ipaddress
@@ -89,7 +89,7 @@ class fireagent:
 
 	def serverCommands(interface):
 		
-		t = threading.Timer(20, fireagent.agentPoll,[agentinfo])
+		t = threading.Timer(20, fireagent.agentPoll,[interface])
         
 
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -136,7 +136,7 @@ def main():
 	if args.interface:
 		interface = args.interface
 		fireagent.agentInit(interface)
-		fireagent.serverCommands()
+		fireagent.serverCommands(interface)
 	
 
 if __name__ == "__main__":
