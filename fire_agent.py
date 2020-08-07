@@ -1,6 +1,6 @@
 #!/usr/bin/python3.6
 
-import socket, sys, struct, os, time, pickle, argparse, netifaces
+import socket, sys, struct, os, time, pickle, argparse, netifaces, threading
 
 HOST = '192.168.5.24'
 PORT = 5050
@@ -14,12 +14,12 @@ class fireagent:
 
 		for key, value in inet_addr.items():
 			if key == 'addr':
-				return bytes(value,'UTF-8')	
+				return value	
 
 
 		return ipaddress
 
-	def agentPoll(interface):
+	def agentInit(interface):
 		pollsig = b"$agent-poll$"
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		print(f"attempting to connect to firecontroller at {HOST}")
@@ -63,12 +63,40 @@ class fireagent:
 			s.send(bytestosend)
 		s.close()
 
+	def agentPoll(interface):
+		while True:
+			pollsig = b"$agent-poll$"
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			print(f"attempting to connect to firecontroller at {HOST}")
+			s.connect((HOST,PORT))
+			print("connection successful")
+			s.sendall(pollsig)
+			print("polling firecontroller")
+			data = s.recv(1024)
+			if not data:
+				print("polling failed, cannot find firecontroller")
+			else:
+				
+				print("sending hostinfo ipaddress")
+				s.sendall(fireagent.getHostInfo(interface))
+				print("firecontroller msg ->" + repr(data.decode()))
+				status = s.recv(1024)
+				print("firecontroller msg ->" + repr(status.decode()))			
+			s.close()
+			time.sleep(60)
+		
+	
 	def serverCommands(interface):
 		
 		
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		bind = agentsocket.bind((fireagent.getHostInfo(interface),5050))
+		bind = agentsocket.bind((socket.gethostname(),5050))
 		agentsocket.listen()
+		
+		t = threading.Timer(20, fireagent.agentPoll,[interface])
+    	t.setDaemon(True)
+        t.start()
+
 		while True:
 			print("waiting on server commands")
 			(serversocket, address) = agentsocket.accept()
@@ -97,16 +125,16 @@ class fireagent:
 					os.popen(command.decode())
 					serversocket.sendall(bytes(commandResult, 'UTF-8'))
 				serversocket.close()
-				fireagent.agentPoll()
+				fireagent.agentInit()
 
 def main():
-	parser = argparse.ArgumentParser(description='firewall-cmd/Netfilter firewall configration')
-	parser.add_argument("-interface", help="interface the agent will listen for fire server", action="store")
-	args = parser.parse_args()
+
+	parser.add_argument("interface", help="interface the agent will listen for fire server", action="store")
+
 	if args.interface:
 		interface = args.interface
-		fireagent.agentPoll(interface)
-		fireagent.serverCommands(interface)
+		fireagent.agentInit(interface)
+		fireagent.serverCommands()
 	
 
 if __name__ == "__main__":
