@@ -1,6 +1,6 @@
 #!/usr/bin/python3.6
 
-import socket, sys, struct, os, time, pickle, argparse, netifaces, threading
+import socket, sys, struct, os, time, pickle, argparse, netifaces
 
 HOST = '192.168.5.24'
 PORT = 5050
@@ -63,6 +63,7 @@ class fireagent:
 			s.send(bytestosend)
 		s.close()
 
+
 	def agentPoll(interface):
 		while True:
 			pollsig = b"$agent-poll$"
@@ -84,19 +85,19 @@ class fireagent:
 				print("firecontroller msg ->" + repr(status.decode()))			
 			s.close()
 			time.sleep(60)
-		
-	
+
+
 	def serverCommands(interface):
 		
-		
+		t = threading.Timer(20, fireagent.agentPoll,[agentinfo])
+        
+
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		bind = agentsocket.bind((socket.gethostname(),5050))
 		agentsocket.listen()
 		
-		t = threading.Timer(20, fireagent.agentPoll,[interface])
-    	t.setDaemon(True)
-        t.start()
-
+		t.setDaemon(True)
+		t.start()
 		while True:
 			print("waiting on server commands")
 			(serversocket, address) = agentsocket.accept()
