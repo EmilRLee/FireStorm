@@ -138,7 +138,7 @@ def main():
 	if args.interface:
 		interface = args.interface
 		fireagent.agentInit(interface)
-		fireagent.serverCommands()
+		fireagent.serverCommands(interface)
 	
 
 if __name__ == "__main__":
