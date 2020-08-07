@@ -154,7 +154,7 @@ def main():
     parser.add_argument("-pushconfig", help="updates the agents current configurations", action="store")
     parser.add_argument("-server_stop", help="stops the fireserver", action="store_true")
     parser.add_argument("--web", help="initiates the web app interface. The app provides a graphical ui for configuring firewalls", action="store_true")
-    parser.add_argument("server", help="supply the fireserver IP", action="store")
+    parser.add_argument("-server", help="supply the fireserver IP", action="store")
     args = parser.parse_args()
     
     HOST = args.server
