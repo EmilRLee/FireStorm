@@ -1,6 +1,6 @@
 #!/usr/bin/python3.6
 
-import socket, sys, struct, os, time, pickle, argparse, netifaces
+import socket, sys, struct, os, time, pickle, argparse, netifaces, threading
 
 HOST = '192.168.5.24'
 PORT = 5050
