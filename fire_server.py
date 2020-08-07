@@ -1,30 +1,57 @@
 #!/usr/bin/python3.6
 
-import socket, sys, struct, time, yaml, os, pickle
+import socket, sys, time, yaml, os, threading, schedule, pickle
 
 
 
 class fire_server:
 
+    active_agents = []
+    inactive_agents = []
     fire_agents = []
     agent_configs = []
     fire_controller = []
     data = []
     
+    
+
     def __init__(self):
         print("making socket")
         self.serversocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         bind = self.serversocket.bind((socket.gethostname(),5050))
         self.serversocket.listen()
+        if os.environ['COMPUTERNAME']:
+            self.serverName = os.environ['COMPUTERNAME']
+        else:
+            self.serverName = os.environ['HOSTNAME']
         
     def __del__(self):
         print('Server deleted')
         
+    def heartbeat(self,agentinfo):
+        while True:
+            time.sleep(60)
+            try:
+                serversocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                serversocket.connect((agentinfo,5050))
+                serversocket.close()
+                if agentinfo not in self.active_agents:
+                    self.active_agents.append(agentinfo)
+                print(self.active_agents)
+                if agentinfo in self.inactive_agents:
+                    self.inactive_agents.remove(agentinfo)
+            except socket.error:
+                print(f'agent {agentinfo} has no response')
+                if agentinfo in self.active_agents:
+                    self.active_agents.remove(agentinfo)
+                    if agentinfo not in self.inactive_agents:
+                        self.inactive_agents.append(agentinfo)
 
     def socket_comms(self):       
         while True:
             print("waiting for agents to connect")
             (agentsocket, address) = self.serversocket.accept()
+            agentsocket.settimeout(10)
             print(f'connection from {address}')
             #self.serversocket.setblocking(False)
             #print("waiting for agents to connect")
@@ -273,7 +300,11 @@ class fire_server:
                     agentsocket.close()
                     agentsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                     time.sleep(1)
-                    agentsocket.connect((f[0],5050))
+                    try:
+                        agentsocket.connect((f[0],5050))
+                    except socket.error:
+                        print(socket.error)
+                        continue
                     agentsocket.sendall(b"$server-auth$")
                     agentsocket.sendall(b'iptable')
                     with open("./agents/{}".format(filename.decode()), "rb") as file:
@@ -295,6 +326,8 @@ class fire_server:
                     agentsocket.sendall(b"$server-auth$")
                     agentsocket.sendall(b'yaml')
                     check, command = fire_server.command_build(filename.decode())
+                    print(check)
+                    print(command)
                     agentsocket.sendall(bytes("{}".format(check), 'UTF-8'))
                     checkstatus = agentsocket.recv(1024)
                     if checkstatus.decode().startswith("false"):
@@ -303,6 +336,30 @@ class fire_server:
                     else:
                         agentsocket.sendall(bytes('iptables -L', 'UTF-8'))
                         print('command sent: iptables -L')
+            elif self.data.startswith(b'$init-web$'):
+                
+                active_agents = pickle.dumps(self.active_agents)
+                inactive_agents = pickle.dumps(self.inactive_agents)
+                fire_agents = pickle.dumps(self.fire_agents)
+
+                if self.active_agents == []:
+                    agentsocket.sendall(b'none')
+                else:   
+                    agentsocket.sendall(active_agents)
+                time.sleep(.8)
+                if self.inactive_agents == []:
+                    agentsocket.sendall(b'none')
+                else:
+                    agentsocket.sendall(inactive_agents)
+                time.sleep(.8)
+                agentsocket.sendall(bytes(str(self.serverName), 'UTF-8'))
+                time.sleep(.8)
+                print(self.serverName)
+                if self.fire_agents == []:
+                    agentsocket.sendall(b'none')
+                else:
+                    agentsocket.sendall(fire_agents)
+            #---- end of processing access keystring ----# 
             else:
                 print("processing error")
 
@@ -313,6 +370,10 @@ class fire_server:
             return b"agent already registered"
         else:
             self.fire_agents.append(agentinfo)
+            self.active_agents.append(agentinfo)
+            t = threading.Timer(20, self.heartbeat,[agentinfo])
+            t.setDaemon(True)
+            t.start()
             print("registered agent successfully")
             return b"agent registered successfully"
 
