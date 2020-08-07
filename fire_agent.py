@@ -94,7 +94,7 @@ class fireagent:
 
 	def serverCommands(interface):
 		
-		t = threading.Timer(20, fireagent.agentPoll,[agentinfo])
+		t = threading.Timer(20, fireagent.agentPoll,[interface])
         
 
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
