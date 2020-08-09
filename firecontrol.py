@@ -16,8 +16,8 @@ def webvars(HOST):
     pickled_inactive_agents = firesocket.recv(1024)
     serverName = firesocket.recv(1024)
     pickled_fire_agents = firesocket.recv(1024)
-   
-
+    pickled_startTime = firesocket.recv(1024)
+    startTime = pickle.loads(pickled_startTime)
     if pickled_active_agents != b'none':
         active_agents = pickle.loads(pickled_active_agents)
     else:
@@ -48,13 +48,13 @@ def webvars(HOST):
 
 
 
-    return HOST, active_agents, inactive_agents, serverName, fire_agents, AgentCount
+    return HOST, active_agents, inactive_agents, serverName, fire_agents, AgentCount, startTime
 
 
 
 @app.route("/home",)
 def web_home():
-    HOST, active_agents, inactive_agents, serverName, fire_agents, AgentCount = webvars(app.config['HOST'])
+    HOST, active_agents, inactive_agents, serverName, fire_agents, AgentCount, startTime = webvars(app.config['HOST'])
     if active_agents != 'none':
         activeCount = len(active_agents)
     else:
@@ -70,7 +70,10 @@ def web_home():
         inactive_agents = 'N/A'
     if fire_agents == 'none':
         fire_agents = ['No agents registered']
-    return render_template("home.html", host=HOST, activeCount=activeCount, active_agents=active_agents, inactiveCount=inactiveCount, inactive_agents=inactive_agents, serverName=serverName, AgentCount=AgentCount, fire_agents=fire_agents)
+
+    UpTime = time.time() - startTime
+
+    return render_template("home.html", host=HOST, activeCount=activeCount, active_agents=active_agents, inactiveCount=inactiveCount, inactive_agents=inactive_agents, serverName=serverName, AgentCount=AgentCount, fire_agents=fire_agents, UpTime=UpTime)
 
 @app.route("/listagents")
 def web():

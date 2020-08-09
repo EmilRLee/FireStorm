@@ -1,0 +1,15 @@
+Fire_server package [yum] requirements:
+- nfdump
+- pip[3]
+- python3
+- libnetlink
+- libnet
+- libnfnetlink
+
+Fire_server pip[3] requirements:
+- Flask
+- NFQP3
+- yara-python
+- schedule
+- ifaddr
+- argparser

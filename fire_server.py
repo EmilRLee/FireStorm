@@ -12,7 +12,7 @@ class fire_server:
     agent_configs = []
     fire_controller = []
     data = []
-    
+    startTime = time.time()
     
 
     def __init__(self):
@@ -26,15 +26,28 @@ class fire_server:
             self.serverName = os.environ['HOSTNAME']
         
     def __del__(self):
-        print('Server deleted')
-        
+        print('Server deleted')   
+    
     def heartbeat(self,agentinfo):
         while True:
             time.sleep(60)
-        
-            #checking agent poll status
-            if agentinfo not in self.active_agents:
-                self.inactive_agents.append(agentinfo)
+            try:
+                serversocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                serversocket.connect((agentinfo,5050))
+                serversocket.close()
+                if agentinfo not in self.active_agents:
+                    #add agent to active state
+                    self.active_agents.append(agentinfo)
+                print(self.active_agents)
+                if agentinfo in self.inactive_agents:
+                    #remove agent from inactive state
+                    self.inactive_agents.remove(agentinfo)
+            except socket.error:
+                print(f'agent {agentinfo} has no response')
+                if agentinfo in self.active_agents:
+                    self.active_agents.remove(agentinfo)
+                    if agentinfo not in self.inactive_agents:
+                        self.inactive_agents.append(agentinfo)
 
     def socket_comms(self):       
         while True:
@@ -351,6 +364,8 @@ class fire_server:
                     agentsocket.sendall(b'none')
                 else:
                     agentsocket.sendall(fire_agents)
+                startTime = pickle.dumps(self.startTime)
+                agentsocket.sendall(startTime)
             #---- end of processing access keystring ----# 
             else:
                 print("processing error")
