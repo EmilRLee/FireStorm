@@ -1,6 +1,6 @@
 #!/usr/bin/python3.6
 
-import socket, sys, time, yaml, os, threading, schedule, pickle
+import socket, sys, time, os, threading, schedule, pickle, netflow
 
 
 
@@ -28,6 +28,7 @@ class fire_server:
     def __del__(self):
         print('Server deleted')   
     
+    
     def heartbeat(self,agentinfo):
         while True:
             time.sleep(60)
@@ -53,12 +54,12 @@ class fire_server:
         while True:
             print("waiting for agents to connect")
             (agentsocket, address) = self.serversocket.accept()
-            agentsocket.settimeout(10)
+            agentsocket.settimeout(20)
             print(f'connection from {address}')
             #self.serversocket.setblocking(False)
             #print("waiting for agents to connect")
             self.data = agentsocket.recv(1024)
-            print(f"data recieved: {self.data.decode()}")
+            print(f"data recieved: {self.data.decode()}\n")
             if not self.data:
                 pass
             if self.data.startswith(b"$agent-poll$"):
@@ -77,191 +78,34 @@ class fire_server:
                 hostip = agentsocket.recv(1024)
                 hostip = hostip.decode()
                 if hostip in self.agent_configs:
-                    print("reading configuration from {}.yaml".format(hostip))
-                    file = open("./agents/{}.yaml".format(hostip), "r")
-                    documents = yaml.load(file)
-                    count = 1
-                    command = 'iptables'
-                    check = 'iptables'
-                    for key, value in documents.items():
-                        count += 1
-                        
-                        if key == "table":
-                            command = command + f' -t {value}'
-                        elif key == "action":
-                            check = command + ' -C'
-                            if value == "append":
-                                command = command + f' -A'
-                            if value == "insert":
-                                command = command + f' -I'
-                        elif key == "chain":
-                            command = command + ' {}'.format(value.upper())
-                            check = check + ' {}'.format(value.upper())
-                        elif key == "match":
-                            vals = 0
-                            for i in value:
-                                try:
-                                    if value[vals].get('protocol'):
-                                        p = value[vals].get('protocol')
-                                        print(value[vals].get('protocol'))
-                                        command = command + f' -p {p}'
-                                        check = check + f' -p {p}'
-                                except KeyError:
-                                    pass
-                                try:
-                                    if value[vals].get('dport'):
-                                        d = value[vals].get('dport')
-                                        print(value[vals].get('dport'))
-                                        command = command + f' --dport {d}'
-                                        check = check + f' --dport {d}'
-                                except KeyError:
-                                    pass
-                                try:
-                                    if value[vals].get('source'):
-                                        s = value[vals].get('source')
-                                        print(value[vals].get('source'))
-                                        command = command + f' -s {s}'
-                                        check = check + f' -s {s}'
-                                except KeyError:
-                                    pass
-                                try:
-                                    if value[vals].get('destination'):
-                                        d = value[vals].get('destination')
-                                        print(value[vals].get('destination'))
-                                        command = command + f' -d {d}'
-                                        check = check + f' -d {d}'
-                                except KeyError:
-                                    pass
-                                try:
-                                    if value[vals].get('module'):
-                                        m = value[vals].get('module')
-                                        print(value[vals].get('module'))
-                                        command = command + f' -m {m}'
-                                        check = check + f' -m {m}'
-                                except KeyError:
-                                    pass
-                                vals += 1
-                        elif key == 'target':
-                            command = command + ' -j {}'.format(value.upper())
-                            check = check + ' -j {}'.format(value.upper())    
-                                
-                    #agentsocket.sendall(bytes(str(documents), 'UTF-8'))
-                    print(documents)
-                    agentcheck = agentsocket.sendall(bytes(check, 'UTF-8'))
-                    checkstatus = agentsocket.recv(1024)
-                    print(checkstatus.decode())
-                    if checkstatus.decode().startswith("false"):
-                        agentcommand = agentsocket.sendall(bytes(command, 'UTF-8'))
-                        print(f"command sent: {command}")
-                    else:
-                        agentsocket.sendall(bytes('iptables -L', 'UTF-8'))
-                        print('command sent: iptables -L')
-                    #time.sleep(1)
-                    #commanddata = agentsocket.recv(4096)
-                    #print(commanddata.decode())
-
-                    file.close()
+                    agentsocket.sendall(b"agent has configuration on file sending it now.")
+                    #creates agents iptables config file for new agent
+                    with open("./agents/{}.iptable".format(hostip), "rb") as conf:
+                        agentconfig = conf.read(65535)
+                        agentsocket.send(conf)
+                   
+                    self.agent_configs.append(hostip)
                     agentsocket.close()
                 else:
-                    
-                    file = open(r"./agents/baseconfig.yaml", "r")
-                        
-                    documents = yaml.load(file)
-                    count = 1
-                    command = 'iptables'
-                    check = 'iptables'
-                    for key, value in documents.items():
-                        count += 1
-                        
-                        if key == "table":
-                            command = command + f' -t {value}'
-                        elif key == "action":
-                            check = command + ' -C'
-                            if value == "append":
-                                command = command + f' -A'
-                            if value == "insert":
-                                command = command + f' -I'
-                        elif key == "chain":
-                            command = command + ' {}'.format(value.upper())
-                            check = check + ' {}'.format(value.upper())
-                        elif key == "match":
-                            vals = 0
-                            for i in value:
-                                try:
-                                    if value[vals].get('protocol'):
-                                        p = value[vals].get('protocol')
-                                        print(value[vals].get('protocol'))
-                                        command = command + f' -p {p}'
-                                        check = check + f' -p {p}'
-                                except KeyError:
-                                    pass
-                                try:
-                                    if value[vals].get('dport'):
-                                        d = value[vals].get('dport')
-                                        print(value[vals].get('dport'))
-                                        command = command + f' --dport {d}'
-                                        check = check + f' --dport {d}'
-                                except KeyError:
-                                    pass
-                                try:
-                                    if value[vals].get('source'):
-                                        s = value[vals].get('source')
-                                        print(value[vals].get('source'))
-                                        command = command + f' -s {s}'
-                                        check = check + f' -s {s}'
-                                except KeyError:
-                                    pass
-                                try:
-                                    if value[vals].get('destination'):
-                                        d = value[vals].get('destination')
-                                        print(value[vals].get('destination'))
-                                        command = command + f' -d {d}'
-                                        check = check + f' -d {d}'
-                                except KeyError:
-                                    pass
-                                try:
-                                    if value[vals].get('module'):
-                                        m = value[vals].get('module')
-                                        print(value[vals].get('module'))
-                                        command = command + f' -m {m}'
-                                        check = check + f' -m {m}'
-                                except KeyError:
-                                    pass
-                                vals += 1
-                        elif key == 'target':
-                            command = command + ' -j {}'.format(value.upper())
-                            check = check + ' -j {}'.format(value.upper())
-                        
-                    #agentsocket.sendall(bytes(str(documents), 'UTF-8'))
-                    print(documents)
-                    file.close()
-                    agentcheck = agentsocket.sendall(bytes(check, 'UTF-8'))
-                    checkstatus = agentsocket.recv(1024)
-                    print(checkstatus.decode())
-                    if checkstatus.decode().startswith("false"):
-                        agentcommand = agentsocket.sendall(bytes(command, 'UTF-8'))
-                        print(f"command sent: {command}")
-                    else:
-                        agentsocket.sendall(bytes('iptables -L', 'UTF-8'))
-                        print('command sent: iptables -L')
-                    #time.sleep(1)
-                    #commanddata = agentsocket.recv(4096)
-                    #print(commanddata.decode())
+                    agentsocket.sendall(b"fireserver has no configuration on file. pulling agent configuration now!") 
+                   
                     #creates agents iptables config file for new agent
                     with open("./agents/{}.iptable".format(hostip), "wb") as create:
                         agentconfig = agentsocket.recv(65535)
-                        totalRecv = len(agentconfig)
-                        print(totalRecv)
                         create.write(agentconfig)
-                    print("creating yaml config file for new agent")
-                    #creates agents yaml config file for new agent
-                    copy = open(r"./agents/baseconfig.yaml", "r")
-                    with open("./agents/{}.yaml".format(hostip), "w+") as config:
-                        for line in copy:
-                            config.write(line)
-
+                   
                     self.agent_configs.append(hostip)
                     agentsocket.close()
+            elif self.data.startswith(b"$agent-push$"):
+                agentsocket.sendall(b"agent config request recieved")
+                hostip = agentsocket.recv(1024)
+                print(f"config push requested from agent: {hostip} from address {address[0]}")
+                agentconfig = agentsocket.recv(65535)
+                with open("./agents/{}.iptable".format(hostip), "wb") as create:
+                    create.write(agentconfig)
+
+                print("wrote to config")
+                agentsocket.send(b"configuration successfull saved!")
             elif self.data.startswith(b"$list-agent$"):
                 print(f"agentlist requested from {address}")
                 agentsocket.sendall(b"agent list recieved")
@@ -271,6 +115,7 @@ class fire_server:
                     agentsocket.sendall(bytes(str(fire_server.fire_agents),encoding='utf-8'))
                 else:
                     agentsocket.sendall(b"no agents registered")
+                agentsocket.close()
             elif self.data.startswith(b"$get-config$"):
                 self.fire_controller = address
                 print(f"agent config requested from {address}")
@@ -280,15 +125,14 @@ class fire_server:
                 agent = self.data.decode()
                 #process agent IP
                 if agent in self.fire_agents:
-                    agentyaml = open(r"./agents/{}.yaml".format(agent), "r")
-                    agentsocket.sendall(bytes(agentyaml.read(65535), "UTF-8"))
-                    agentyaml.close()
+                   
                     agentraw = open(r"./agents/{}.iptable".format(agent), "r")
                     agentsocket.sendall(bytes(agentraw.read(65535), "UTF-8"))
                     print(f"agent = {agent}")   
                 else:
                     print(f'agent: {agent} not registered')
                     agentsocket.sendall(b"agent not registered")
+                agentsocket.close()
             elif self.data.startswith(b"$server-stop$"):
                 agentsocket.sendall(b"shutdown signal recieved")
                 sys.exit()
@@ -297,50 +141,33 @@ class fire_server:
                 filename = agentsocket.recv(1024)
                 config = agentsocket.recv(65535)
                 if b"iptable" in filename:
-                    with open("./agents/{}".format(filename.decode()), "wb") as file:
-                        file.write(config)
+                    with open("./agents/{}".format(filename.decode()), "w") as file:
+                        file.write(config.decode().replace("\r\n","\n"))
                     agentsocket.sendall(bytes("configuration successfully saved", 'UTF-8'))
                     f = filename.decode().split(".iptable")
                     print(f"connecting to agent @ {f[0]}")
-                    agentsocket.close()
-                    agentsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                    time.sleep(1)
+                    newagentsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                    #time.sleep(1)
                     try:
-                        agentsocket.connect((f[0],5050))
+                        newagentsocket.connect((f[0],5050))
+                        agentsocket.sendall(b"$server-auth$")
+                        time.sleep(3)
+                        print("sending configtype to agent")
+                        newagentsocket.sendall(b'iptable')
+                        with open("./agents/{}".format(filename.decode()), "r") as file:
+                            bytestosend = file.read(65535)
+                            newagentsocket.send(bytes(bytestosend,'UTF-8'))
+                            print(f'SENT FILE TO {f[0]}')
+                        time.sleep(3)
+                        newagentsocket.sendall(bytes("iptables-restore agent.iptable", 'UTF-8'))
+                        #status = agentsocket.recv(1024)
+                        #print(f"status: {status}")
                     except socket.error:
                         print(socket.error)
+                        agentsocket.sendall(b"agent could not be reached at the moment. Must wait for agent to poll for changes to take affect")
                         continue
-                    agentsocket.sendall(b"$server-auth$")
-                    agentsocket.sendall(b'iptable')
-                    with open("./agents/{}".format(filename.decode()), "rb") as file:
-                        bytestosend = file.read(65535)
-                        agentsocket.send(bytestosend)
-                    agentsocket.sendall(bytes("iptables-restore agent.iptable", 'UTF-8'))
-                    status = agentsocket.recv(1024)
-                    print(f"status: {status}")
-                elif b"yaml" in filename:
-                    with open("./agents/{}".format(filename.decode()), "wb") as file:
-                        file.write(config)
-                    agentsocket.sendall(b"configuration successfully saved")
-                    #cancel socket and connect to agent to notifiy agent of new firewall configuration.
-                    f = filename.decode().split(".yaml")
-                    print(f"connecting to agent @ {f[0]}")
                     agentsocket.close()
-                    agentsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                    agentsocket.connect((f[0],5050))
-                    agentsocket.sendall(b"$server-auth$")
-                    agentsocket.sendall(b'yaml')
-                    check, command = fire_server.command_build(filename.decode())
-                    print(check)
-                    print(command)
-                    agentsocket.sendall(bytes("{}".format(check), 'UTF-8'))
-                    checkstatus = agentsocket.recv(1024)
-                    if checkstatus.decode().startswith("false"):
-                        agentcommand = agentsocket.sendall(bytes(command, 'UTF-8'))
-                        print(f"command sent: {command}")
-                    else:
-                        agentsocket.sendall(bytes('iptables -L', 'UTF-8'))
-                        print('command sent: iptables -L')
+                
             elif self.data.startswith(b'$init-web$'):
                 
                 active_agents = pickle.dumps(self.active_agents)
@@ -366,6 +193,16 @@ class fire_server:
                     agentsocket.sendall(fire_agents)
                 startTime = pickle.dumps(self.startTime)
                 agentsocket.sendall(startTime)
+                agentsocket.close()
+            elif self.data.startswith(b'$agent-table'):
+                print("agent table request recieved")
+                agent = agentsocket.recv(1024)
+                print(agent.decode())
+                print("agent = {}".format(agent.decode()))
+                with open('./agents/{}.iptable'.format(agent.decode()), 'rb') as agentconfig:
+                    agentconf = agentconfig.read(65535)
+                    agentsocket.sendall(agentconf)
+                agentsocket.close()
             #---- end of processing access keystring ----# 
             else:
                 print("processing error")
@@ -391,76 +228,7 @@ class fire_server:
         if agent in self.fire_agents:
             index = self.fire_agents.index(agent)
             return self.fire_agents[index]
-
-    def command_build(configfile):
-        file = open("./agents/{}".format(configfile), "r")
-        documents = yaml.load(file)
-        count = 1
-        command = 'iptables'
-        check = 'iptables'
-        for key, value in documents.items():
-            count += 1
-            
-            if key == "table":
-                command = command + f' -t {value}'
-            elif key == "action":
-                check = command + ' -C'
-                if value == "append":
-                    command = command + f' -A'
-                if value == "insert":
-                    command = command + f' -I'
-            elif key == "chain":
-                command = command + ' {}'.format(value.upper())
-                check = check + ' {}'.format(value.upper())
-            elif key == "match":
-                vals = 0
-                for i in value:
-                    try:
-                        if value[vals].get('protocol'):
-                            p = value[vals].get('protocol')
-                            print(value[vals].get('protocol'))
-                            command = command + f' -p {p}'
-                            check = check + f' -p {p}'
-                    except KeyError:
-                        pass
-                    try:
-                        if value[vals].get('dport'):
-                            d = value[vals].get('dport')
-                            print(value[vals].get('dport'))
-                            command = command + f' --dport {d}'
-                            check = check + f' --dport {d}'
-                    except KeyError:
-                        pass
-                    try:
-                        if value[vals].get('source'):
-                            s = value[vals].get('source')
-                            print(value[vals].get('source'))
-                            command = command + f' -s {s}'
-                            check = check + f' -s {s}'
-                    except KeyError:
-                        pass
-                    try:
-                        if value[vals].get('destination'):
-                            d = value[vals].get('destination')
-                            print(value[vals].get('destination'))
-                            command = command + f' -d {d}'
-                            check = check + f' -d {d}'
-                    except KeyError:
-                        pass
-                    try:
-                        if value[vals].get('module'):
-                            m = value[vals].get('module')
-                            print(value[vals].get('module'))
-                            command = command + f' -m {m}'
-                            check = check + f' -m {m}'
-                    except KeyError:
-                        pass
-                    vals += 1
-            elif key == 'target':
-                command = command + ' -j {}'.format(value.upper())
-                check = check + ' -j {}'.format(value.upper())    
-            return  check, command                              
-
+                
 def main():
 
     
