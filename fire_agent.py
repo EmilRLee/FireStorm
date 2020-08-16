@@ -2,7 +2,7 @@
 
 import socket, sys, struct, os, time, pickle, argparse, netifaces, threading
 
-HOST = '192.168.5.24'
+
 PORT = 5050
 
 class fireagent:
@@ -16,14 +16,13 @@ class fireagent:
 			if key == 'addr':
 				return bytes(value,'UTF-8')	
 
-
 		return ipaddress
 
-	def agentInit(interface):
+	def agentInit(SERVER,interface):
 		pollsig = b"$agent-poll$"
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		print(f"attempting to connect to firecontroller at {HOST}")
-		s.connect((HOST,PORT))
+		print(f"attempting to connect to firecontroller at {SERVER}")
+		s.connect((SERVER,PORT))
 		print("connection successful")
 		s.sendall(pollsig)
 		print("polling firecontroller")
@@ -40,39 +39,52 @@ class fireagent:
 			print("firecontroller msg ->" + repr(status.decode()))			
 		s.close()
 		time.sleep(1)
+		fireagent.get_conf(SERVER)
+		
+	def get_conf(SERVER):
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.connect((HOST,PORT))
+		s.connect((SERVER,PORT))
 		s.sendall(b"$agent-config$")
 		s.sendall(hostip)
-		check = s.recv(1024)
-		print(check.decode())
-		checkstatus = os.system(check.decode())
-		print(f'check: {checkstatus}')
-		if checkstatus == 0:
-			print('true')
-			s.sendall(bytes('true', 'UTF-8'))
-			#print(str(checkstatus))
-		else:	
-			s.sendall(bytes('false', 'UTF-8'))
-		print('done')
-		command = s.recv(1024)
-		os.popen(command.decode())
-		#s.sendall(bytes(commandResult, 'UTF-8'))
+		status = s.recv(1024)
+		if status.decode() == "agent has configuration on file sending it now.":
+			conf = s.recv(65535)
+			with open("agent.iptable", "wb") as rule:
+				rule.write(conf)
+			
+	
+			restore = os.popen("iptables-restore agent.iptable").read()
+			s.sendall(bytes(restore, 'UTF-8'))
+			s.close()
+		else:
+			os.popen("iptables-save > agent.iptable")
+			with open("agent.iptable", "rb") as file:
+				conf = file.read(65535)
+				print(conf.decode("UTF-8"))
+				s.send(conf)
+	#push agents current configurations to the server
+	def push_conf(SERVER):
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.connect((SERVER,PORT))
+		s.sendall(b"$agent-push$")
+		stat = s.recv(1024)
+		print(stat.decode())
+		s.sendall(hostip)
+		
 		os.popen("iptables-save > agent.iptable")
-		time.sleep(3)
-		with open("agent.iptable", "rb") as rule:
-			bytestosend = rule.read(65535)
-			s.send(bytestosend)
-		s.close()
-
-
-	def agentPoll(interface):
+		with open("agent.iptable", "rb") as file:
+			conf = file.read(65535)
+			print(conf.decode("UTF-8"))
+			s.send(conf)
+		stat = s.recv(1024)
+		print(stat.decode())
+	def agentPoll(SERVER,interface):
 		while True:
 			pollsig = b"$agent-poll$"
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			print(f"attempting to connect to firecontroller at {HOST}")
+			print(f"attempting to connect to firecontroller at {SERVER}")
 			try:
-				s.connect((HOST,PORT))
+				s.connect((SERVER,PORT))
 				print("connection successful")
 				s.sendall(pollsig)
 				print("polling firecontroller")
@@ -87,60 +99,54 @@ class fireagent:
 					status = s.recv(1024)
 					print("firecontroller msg ->" + repr(status.decode()))
 				s.close()
-			except socket.error:
-				pass			
-			time.sleep(60)
+			except:
+				print(socket.error)
+				continue			
+			time.sleep(300)
 
 
-	def serverCommands(interface):
-		
-		t = threading.Timer(20, fireagent.agentPoll,[interface])
+	def serverCommands(SERVER,interface):
         
-
+		hostip = fireagent.getHostInfo(interface)
 		agentsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		bind = agentsocket.bind((socket.gethostname(),5050))
+		bind = agentsocket.bind((hostip,5050))
 		agentsocket.listen()
 		
-		t.setDaemon(True)
-		t.start()
 		while True:
 			print("waiting on server commands")
 			(serversocket, address) = agentsocket.accept()
+			print("connection recieved from " + address[0])
 			auth = serversocket.recv(1024)
+			configtype = serversocket.recv(1024)
+			print("CONFIG TYPE" + configtype.decode())
 			if auth.startswith(b"$server-auth$"):
-				configtype = serversocket.recv(1024)
-				if configtype == b'yaml':
-					check = serversocket.recv(1024)
-					print(check.decode())
-					checkstatus = os.system(check.decode())
-					print(f'check: {checkstatus}')
-					if checkstatus == 0:
-						print('true')
-						serversocket.sendall(bytes('true', 'UTF-8'))
-						#print(str(checkstatus))
-					else:	
-						serversocket.sendall(bytes('false', 'UTF-8'))
-					print('done')
-					command = serversocket.recv(1024)
-					os.popen(command.decode())
-				elif configtype == b'iptable':	
+		
+				if configtype == b'iptable':	
 					configfile = serversocket.recv(65535)
-					with open("agent.iptable", "wb") as file:
-						file.write(configfile)
+					with open("agent.iptable", "w") as file:
+						file.write(configfile.decode().replace("\r\n","\n"))
+						#print(file.read(65535))
+					print('WROTE TO FILE')
 					command = serversocket.recv(1024)
+					print("command recieved: "  + command.decode())
 					os.popen(command.decode())
-					serversocket.sendall(bytes(commandResult, 'UTF-8'))
 				serversocket.close()
-				fireagent.agentInit()
+				fireagent.push_conf(SERVER)
 
 def main():
 	parser = argparse.ArgumentParser(description='firecontrol agent')
 	parser.add_argument("-interface", help="interface the agent will listen for fire server", action="store")
+	parser.add_argument("-server", help="fireStorm server to connect to.", action="store")
 	args = parser.parse_args()
+
+	SERVER = args.server
 
 	if args.interface:
 		interface = args.interface
-		fireagent.agentInit(interface)
+		fireagent.agentInit(SERVER,interface)
+		t = threading.Timer(20, fireagent.agentPoll,[SERVER,interface])
+		t.setDaemon(True)
+		t.start()
 		fireagent.serverCommands(interface)
 	
 
