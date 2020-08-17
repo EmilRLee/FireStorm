@@ -22,8 +22,8 @@ class fireagent:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		print(f"attempting to connect to firecontroller at {SERVER}")
 		context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-		context.verify_mode = ssl.CERT_REQUIRED
-		context.load_verify_locations("./certs/cacert.crt")
+		context.verify_mode = ssl.CERT_NONE
+		#context.load_verify_locations("./certs/cacert.crt")
 		conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False)
 		conn.connect((SERVER,PORT))
 		print("connection successful")
@@ -59,12 +59,13 @@ class fireagent:
 				conn.sendall(b"$agent-config$")
 				conn.sendall(hostip)
 				status = conn.recv(1024)
-				print(status)
+				
 				if status == b"agent has configuration on file sending it now.":
+					print(status)
 					conf = conn.recv(65535)
 					with open("agent.iptable", "wb") as rule:
 						rule.write(conf)
-					
+						print("wrote to agent.iptable")
 			
 					restore = os.popen("iptables-restore agent.iptable").read()
 					conn.sendall(bytes(restore, 'UTF-8'))
@@ -72,8 +73,8 @@ class fireagent:
 				else:
 					os.system("iptables-save > agent.iptable")
 					time.sleep(1)
-					with open("./agent.iptable", "rb") as file:
-						conf = file.read(65535)
+					with open("./agent.iptable", "rb") as file1:
+						conf = file1.read(65535)
 						print(conf.decode("UTF-8"))
 						conn.send(conf)
 			except:
