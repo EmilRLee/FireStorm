@@ -24,7 +24,7 @@ class fireagent:
 		context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 		context.verify_mode = ssl.CERT_REQUIRED
 		context.load_verify_locations("./certs/cacert.crt")
-		conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False, suppress_ragged_eofs=True)
+		conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False)
 		conn.connect((SERVER,PORT))
 		print("connection successful")
 		conn.sendall(pollsig)
@@ -54,7 +54,7 @@ class fireagent:
 			context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 			context.verify_mode = ssl.CERT_REQUIRED
 			context.load_verify_locations("./certs/cacert.crt")
-			conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False, suppress_ragged_eofs=True)
+			conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False)
 			conn.connect((SERVER,PORT))
 			conn.sendall(b"$agent-config$")
 			conn.sendall(hostip)
