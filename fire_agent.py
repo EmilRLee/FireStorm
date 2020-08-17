@@ -42,7 +42,7 @@ class fireagent:
 			print("firecontroller msg ->" + repr(status.decode()))			
 		conn.close()
 		time.sleep(1)
-		t = threading.Thread(target=fireagent.get_conf,args=(SERVER,interface))
+		t = threading.Timer(1,fireagent.get_conf,[SERVER,interface])
 		t.setDaemon(True)
 		t.start()
 		
@@ -63,12 +63,13 @@ class fireagent:
 			if status == b"agent has configuration on file sending it now.":
 				print(status)
 				conf = conn.recv(65535)
-				with open("agent.iptable", "wb") as rule:
+				with open("agent.iptable", "w") as rule:
+					conf = conf.decode().replace("\r\n", "\n").replace("\n\n", "\n")
 					rule.write(conf)
 					print("wrote to agent.iptable")
 		
 				os.system("iptables-restore agent.iptable")
-				restore = os.system("iptables-save")
+				restore = os.popen("iptables-save").read()
 				conn.sendall(bytes(restore, 'UTF-8'))
 				conn.close()
 			else:
