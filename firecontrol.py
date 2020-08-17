@@ -186,18 +186,14 @@ class firecontrol:
         firesocket.sendall(bytes(str(agent), 'UTF-8'))
         config_status = firesocket.recv(65535)
         print("fire_server -> " + config_status.decode())
-        if config_status.decode() !="agent not registered":
+        if config_status != b"agent not registered":
             
-            yaml_config = firesocket.recv(65535)
-            with open("{}.yaml".format(agent), 'w+') as file:
-                file.write(yaml_config.decode())
-            print("fire_server ->" + yaml_config.decode())
-        
             iptable_config = firesocket.recv(65535)
             with open("{}.iptable".format(agent), 'w+') as file1:
                 file1.write(iptable_config.decode())
-            print("fire_server ->" + iptable_config.decode())
-                   
+            print("RULES ->\n" + iptable_config.decode())
+        else:
+            print(config_status.decode())           
 
     def update(HOST,agent):
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
