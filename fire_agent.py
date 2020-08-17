@@ -24,7 +24,7 @@ class fireagent:
 		context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 		context.verify_mode = ssl.CERT_REQUIRED
 		context.load_verify_locations("./certs/cacert.crt")
-		conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False)
+		conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False, suppress_ragged_eofs=True)
 		conn.connect((SERVER,PORT))
 		print("connection successful")
 		conn.sendall(pollsig)
@@ -54,7 +54,7 @@ class fireagent:
 			context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 			context.verify_mode = ssl.CERT_REQUIRED
 			context.load_verify_locations("./certs/cacert.crt")
-			conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False)
+			conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False, suppress_ragged_eofs=True)
 			conn.connect((SERVER,PORT))
 			conn.sendall(b"$agent-config$")
 			conn.sendall(hostip)
@@ -67,7 +67,8 @@ class fireagent:
 					rule.write(conf)
 					print("wrote to agent.iptable")
 		
-				restore = os.popen("iptables-restore agent.iptable").read()
+				os.system("iptables-restore agent.iptable")
+				restore = os.system("iptables-save")
 				conn.sendall(bytes(restore, 'UTF-8'))
 				conn.close()
 			else:
@@ -125,8 +126,9 @@ class fireagent:
 					status = conn.recv(1024)
 					print("firecontroller msg ->" + repr(status.decode()))
 				conn.close()
-			except:
-				print(socket.error)
+			except socket.error or KeyboardInterrupt:
+				if KeyboardInterrupt:
+					sys.exit()
 				continue			
 			time.sleep(60)
 
