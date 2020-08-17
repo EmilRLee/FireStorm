@@ -22,7 +22,7 @@ class fire_server:
         self.serversocket.listen()
         self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         self.context.load_cert_chain(certfile=self.CERT, keyfile="./certs/cert.pem", password="mypass")  # 1. key, 2. cert, 3. intermediates
-        #self.context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1  # optional
+        self.context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1  # optional
         self.context.set_ciphers('EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH')
         if os.environ['COMPUTERNAME']:
             self.serverName = os.environ['COMPUTERNAME']
@@ -70,6 +70,7 @@ class fire_server:
                             agentsocket.send(agentconfig)
                     
                         self.agent_configs.append(hostip)
+                        self.preRegistration(hostip)
                         agentsocket.close()
                     else:
                         agentsocket.sendall(b"fireserver has no configuration on file. pulling agent configuration now!") 
@@ -213,19 +214,17 @@ class fire_server:
             index = self.fire_agents.index(agent)
             return self.fire_agents[index]
 
-    def preRegistration(self):
-        reg = open("./register.txt", "r")
+    def preRegistration(self,hostip):
+        with open("./register.txt", "r") as reg:
 
-        for line in reg:
-            self.fire_agents.append(line)
-            print(f"added {line} to registered agents")
+            if hostip not in self.fire_agents:
+                self.fire_agents.append(hostip)
+                print(f"added {line} to registered agents")
 
-        reg.close()
 def main():
 
     
     Fireserver = fire_server()
-    Fireserver.preRegistration()
     Fireserver.socket_comms()
     
 
