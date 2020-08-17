@@ -39,29 +39,36 @@ class fireagent:
 			print("firecontroller msg ->" + repr(status.decode()))			
 		s.close()
 		time.sleep(1)
-		fireagent.get_conf(SERVER)
+		fireagent.get_conf(SERVER,interface)
 		
-	def get_conf(SERVER):
-		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.connect((SERVER,PORT))
-		s.sendall(b"$agent-config$")
-		s.sendall(hostip)
-		status = s.recv(1024)
-		if status.decode() == "agent has configuration on file sending it now.":
-			conf = s.recv(65535)
-			with open("agent.iptable", "wb") as rule:
-				rule.write(conf)
+	def get_conf(SERVER,interface):
+		while True:
+			hostip = fireagent.getHostInfo(interface)
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			try:
+				s.connect((SERVER,PORT))
+				s.sendall(b"$agent-config$")
+				s.sendall(hostip)
+				status = s.recv(1024)
+				if status.decode() == "agent has configuration on file sending it now.":
+					conf = s.recv(65535)
+					with open("agent.iptable", "wb") as rule:
+						rule.write(conf)
+					
 			
-	
-			restore = os.popen("iptables-restore agent.iptable").read()
-			s.sendall(bytes(restore, 'UTF-8'))
-			s.close()
-		else:
-			os.popen("iptables-save > agent.iptable")
-			with open("agent.iptable", "rb") as file:
-				conf = file.read(65535)
-				print(conf.decode("UTF-8"))
-				s.send(conf)
+					restore = os.popen("iptables-restore agent.iptable").read()
+					s.sendall(bytes(restore, 'UTF-8'))
+					s.close()
+				else:
+					os.system("iptables-save > agent.iptable")
+					time.sleep(1)
+					with open("./agent.iptable", "rb") as file:
+						conf = file.read(65535)
+						print(conf.decode("UTF-8"))
+						s.send(conf)
+			except:
+				continue
+			time.sleep(60)
 	#push agents current configurations to the server
 	def push_conf(SERVER):
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -102,7 +109,7 @@ class fireagent:
 			except:
 				print(socket.error)
 				continue			
-			time.sleep(300)
+			time.sleep(60)
 
 
 	def serverCommands(SERVER,interface):
@@ -131,7 +138,7 @@ class fireagent:
 					print("command recieved: "  + command.decode())
 					os.popen(command.decode())
 				serversocket.close()
-				fireagent.push_conf(SERVER)
+				
 
 def main():
 	parser = argparse.ArgumentParser(description='firecontrol agent')
@@ -147,7 +154,7 @@ def main():
 		t = threading.Timer(20, fireagent.agentPoll,[SERVER,interface])
 		t.setDaemon(True)
 		t.start()
-		fireagent.serverCommands(interface)
+		fireagent.serverCommands(SERVER,interface)
 	
 
 if __name__ == "__main__":
