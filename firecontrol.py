@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-import os, time, socket, yaml, argparse,sys, subprocess, pickle
+import os, time, socket, yaml, argparse,sys, subprocess, pickle, ssl
 from flask import Flask, request, render_template, abort, redirect, url_for
 
 
@@ -10,7 +10,11 @@ app = Flask(__name__,template_folder='ui/templates', static_folder='ui/static')
 
 def agentinfo(HOST,agent):
     print(f"agent ========= {agent}")
-    firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.load_verify_locations("./cacert.crt")
+    firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
     firesocket.connect((HOST,PORT))
     firesocket.sendall(b'$agent-table$')
     #after connect send agent ip to get its iptables
@@ -24,7 +28,11 @@ def agentinfo(HOST,agent):
 
 
 def webvars(HOST):
-    firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.load_verify_locations("./cacert.crt")
+    firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
     firesocket.connect((HOST,PORT))
     firesocket.sendall(b"$init-web$")
     pickled_active_agents = firesocket.recv(1024)
@@ -109,7 +117,11 @@ def agent(agent):
         #flash(attempted_username)
         #flash(attempted_password)
 
-        firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_verify_locations("./cacert.crt")
+        firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
         firesocket.connect((app.config['HOST'],PORT))
         print(f"attempting to connect to firecontroller at {app.config['HOST']}")
         firesocket.sendall(b"$push-config$")
@@ -145,7 +157,11 @@ class firecontrol:
 
     def list_agents(HOST):
 
-        firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_verify_locations("./cacert.crt")
+        firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
         firesocket.connect((HOST,PORT))
         print(f"attempting to connect to firecontroller at {HOST}")
         firesocket.sendall(b"$list-agent$")
@@ -156,7 +172,11 @@ class firecontrol:
         return 0
         
     def get_config(HOST,agent):
-        firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_verify_locations("./cacert.crt")
+        firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
         firesocket.connect((HOST,PORT))
         print(f"attempting to connect to firecontroller at {HOST}")
         firesocket.sendall(b"$get-config$")
@@ -180,7 +200,11 @@ class firecontrol:
                    
 
     def update(HOST,agent):
-        firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_verify_locations("./cacert.crt")
+        firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
         firesocket.connect((HOST,PORT))
         print(f"attempting to connect to firecontroller at {HOST}")
         firesocket.sendall(b"$push-config$")
@@ -188,7 +212,11 @@ class firecontrol:
         print("fire_server ->\n" + status)
 
     def server_stop(HOST):
-        firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_verify_locations("./cacert.crt")
+        firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
         firesocket.connect((HOST,PORT))
         print(f"attempting to connect to firecontroller at {HOST}")
         firesocket.sendall(b"$server-stop$")
@@ -196,7 +224,11 @@ class firecontrol:
         print("fire_server ->\n" + status.decode())
 
     def pushconfig(HOST,config):
-        firesocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_verify_locations("./cacert.crt")
+        firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
         firesocket.connect((HOST,PORT))
         print(f"attempting to connect to firecontroller at {HOST}")
         firesocket.sendall(b"$push-config$")
