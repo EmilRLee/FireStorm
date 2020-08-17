@@ -22,8 +22,8 @@ class fireagent:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		print(f"attempting to connect to firecontroller at {SERVER}")
 		context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-		context.verify_mode = ssl.CERT_NONE
-		#context.load_verify_locations("./certs/cacert.crt")
+		context.verify_mode = ssl.CERT_REQUIRED
+		context.load_verify_locations("./certs/cacert.crt")
 		conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False)
 		conn.connect((SERVER,PORT))
 		print("connection successful")
