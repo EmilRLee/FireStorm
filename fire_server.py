@@ -112,7 +112,7 @@ class fire_server:
                 agent = self.data.decode()
                 #process agent IP
                 if agent in self.fire_agents:
-                
+                    print(f'agent: {agent} registered. sending config now')
                     agentraw = open(r"./agents/{}.iptable".format(agent), "r")
                     agentsocket.sendall(bytes(agentraw.read(65535), "UTF-8"))
                     print(f"agent = {agent}")   
