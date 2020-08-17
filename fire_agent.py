@@ -39,7 +39,9 @@ class fireagent:
 			print("firecontroller msg ->" + repr(status.decode()))			
 		s.close()
 		time.sleep(1)
-		fireagent.get_conf(SERVER,interface)
+		t = threading.Timer(1,fireagent.get_conf,[SERVER,interface])
+		t.setDaemon(True)
+		t.start()
 		
 	def get_conf(SERVER,interface):
 		while True:
