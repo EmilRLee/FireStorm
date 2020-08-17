@@ -160,7 +160,7 @@ class firecontrol:
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         context.verify_mode = ssl.CERT_REQUIRED
-        context.load_verify_locations("./cacert.crt")
+        context.load_verify_locations("./certs/cacert.crt")
         firesocket = context.wrap_socket(conn, server_hostname="FireStorm", server_side=False)
         firesocket.connect((HOST,PORT))
         print(f"attempting to connect to firecontroller at {HOST}")
