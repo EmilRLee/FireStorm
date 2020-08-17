@@ -82,7 +82,7 @@ class fire_server:
                     #creates agents iptables config file for new agent
                     with open("./agents/{}.iptable".format(hostip), "rb") as conf:
                         agentconfig = conf.read(65535)
-                        agentsocket.send(conf)
+                        agentsocket.send(agentconfig)
                    
                     self.agent_configs.append(hostip)
                     agentsocket.close()
