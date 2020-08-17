@@ -228,14 +228,28 @@ class fire_server:
         if agent in self.fire_agents:
             index = self.fire_agents.index(agent)
             return self.fire_agents[index]
-                
+
+    def preRegistration(self):
+        reg = open("./register.txt", "r")
+
+        for line in reg:
+            self.fire_agents.append(line)
+            print(f"added {line} to registered agents")
+
+        reg.close()
 def main():
 
     
     Fireserver = fire_server()
+    Fireserver.preRegistration()
     Fireserver.socket_comms()
     
 
 if __name__ == "__main__":
     # execute only if run as a script
+    if os.path.isdir("./agents") == False:
+        os.mkdir("./agents")
+    if os.path.isfile("./register.txt") == False:
+        file = open("./register.txt", "w+")
+        file.close()
     main()
