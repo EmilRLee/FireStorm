@@ -138,7 +138,7 @@ class fire_server:
                     newcontext = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
                     newcontext.verify_mode = ssl.CERT_REQUIRED
                     newcontext.load_verify_locations("./certs/agent_cacert.crt")
-                    newagentsocket = context.wrap_socket(newconn, server_hostname="FireStorm", server_side=False)
+                    newagentsocket = newcontext.wrap_socket(newconn, server_hostname="FireStorm", server_side=False)
                     try:
                         newagentsocket.connect((f[0],5050))
                         agentsocket.sendall(b"$server-auth$")
