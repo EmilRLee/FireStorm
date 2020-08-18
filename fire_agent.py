@@ -152,7 +152,7 @@ class fireagent:
 			print("waiting on server commands")
 			try:
 				(conn, address) = agentsocket.accept()
-				serversocket = self.context.wrap_socket(conn, server_side=True)
+				serversocket = context.wrap_socket(conn, server_side=True)
 				print("connection recieved from " + address[0])
 				auth = serversocket.recv(1024)
 				configtype = serversocket.recv(1024)
