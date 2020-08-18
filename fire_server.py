@@ -133,8 +133,12 @@ class fire_server:
                     agentsocket.sendall(bytes("configuration successfully saved", 'UTF-8'))
                     f = filename.decode().split(".iptable")
                     print(f"connecting to agent @ {f[0]}")
-                    newagentsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                    newconn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                     #time.sleep(1)
+                    newcontext = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+                    newcontext.verify_mode = ssl.CERT_REQUIRED
+                    newcontext.load_verify_locations("./certs/agent_cacert.crt")
+                    newagentsocket = context.wrap_socket(newconn, server_hostname="FireStorm", server_side=False)
                     try:
                         newagentsocket.connect((f[0],5050))
                         agentsocket.sendall(b"$server-auth$")
