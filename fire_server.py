@@ -60,35 +60,34 @@ class fire_server:
             elif self.data.startswith(b"$agent-config$"):
             #sent from agents to get initial configuration when it starts up.    
                 print("config-requested")
-                hostip = agentsocket.recv(1024)
-                hostip = hostip.decode()
-                print(f"host ip === {hostip}")
-                if os.path.exists("./agents/{}.iptable".format(hostip)):
+                agentip = agentsocket.recv(1024)
+                agentip = agentip.decode()
+                print(f"agent ip === {agentip}")
+                if os.path.exists("./agents/{}.iptable".format(agentip)):
                     agentsocket.sendall(b"agent has configuration on file sending it now.")
                     #creates agents iptables config file for new agent
-                    with open("./agents/{}.iptable".format(hostip), "rb") as conf:
+                    with open("./agents/{}.iptable".format(agentip), "rb") as conf:
                         agentconfig = conf.read(65535)
                         agentsocket.send(agentconfig)
                 
-                    self.preRegistration(hostip)
                     agentsocket.close()
                 else:
                     agentsocket.sendall(b"fireserver has no configuration on file. pulling agent configuration now!") 
                     print("no config on file")
                     #creates agents iptables config file for new agent
-                    with open("./agents/{}.iptable".format(hostip), "wb") as create:
+                    with open("./agents/{}.iptable".format(agentip), "wb") as create:
                         agentconfig = agentsocket.recv(65535)
                         create.write(agentconfig)
                         print(agentconfig.decode())
-                    self.agent_configs.append(hostip)
+                    self.agent_configs.append(agentip)
                     agentsocket.close()
-                    self.preRegistration(hostip)
+    
             elif self.data.startswith(b"$agent-push$"):
                 agentsocket.sendall(b"agent config request recieved")
-                hostip = agentsocket.recv(1024)
-                print(f"config push requested from agent: {hostip} from address {address[0]}")
+                agentip = agentsocket.recv(1024)
+                print(f"config push requested from agent: {agentip} from address {address[0]}")
                 agentconfig = agentsocket.recv(65535)
-                with open("./agents/{}.iptable".format(hostip), "wb") as create:
+                with open("./agents/{}.iptable".format(agentip), "wb") as create:
                     create.write(agentconfig)
 
                 print("wrote to config")
@@ -200,10 +199,12 @@ class fire_server:
 
         if agentinfo in self.fire_agents:
             print("agent already registered")
+            self.RegCheck(agentinfo)
             return b"agent already registered"
         else:
             self.fire_agents.append(agentinfo)
             self.active_agents.append(agentinfo)
+            self.RegCheck(agentinfo)
             print("registered agent successfully")
             return b"agent registered successfully"
 
@@ -215,17 +216,28 @@ class fire_server:
             index = self.fire_agents.index(agent)
             return self.fire_agents[index]
 
-    def preRegistration(self,hostip):
-        with open("./register.txt", "r") as reg:
+    def preRegistration(self):
+        with open("./agents/registered.txt", "r") as reg:
+            agents = reg.readlines()
+            for agent in agents:
+                self.fire_agents.append(agent)
+                print(f"added {agent} to registered agents")
 
-            if hostip not in self.fire_agents:
-                self.fire_agents.append(hostip)
-                print(f"added {line} to registered agents")
+    def RegCheck(self,agentip):
+        with open("./agents/registered.txt", "r+") as reg:
+            
+            agents = reg.readlines()
+            if agentip not in agents:
+                reg.write(agentip)
+                print(f"added {agentip} to pre-registration file")
+            else:
+                print("agent already pre-registered")       
 
 def main():
 
     
     Fireserver = fire_server()
+    Fireserver.preRegistration()
     Fireserver.socket_comms()
     
 
@@ -233,7 +245,7 @@ if __name__ == "__main__":
     # execute only if run as a script
     if os.path.isdir("./agents") == False:
         os.mkdir("./agents")
-    if os.path.isfile("./register.txt") == False:
-        file = open("./register.txt", "w+")
+    if os.path.isfile("./agents/registered.txt") == False:
+        file = open("./agents/registered.txt", "w+")
         file.close()
     main()
