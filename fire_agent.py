@@ -50,38 +50,40 @@ class fireagent:
 		while True:
 			hostip = fireagent.getHostInfo(interface)
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			
-			context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-			context.verify_mode = ssl.CERT_REQUIRED
-			context.load_verify_locations("./certs/cacert.crt")
-			conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False)
-			conn.connect((SERVER,PORT))
-			conn.sendall(b"$agent-config$")
-			conn.sendall(hostip)
-			status = conn.recv(1024)
-			
-			if status == b"agent has configuration on file sending it now.":
-				print(status)
-				conf = conn.recv(65535)
-				with open("agent.iptable", "w") as rule:
-					conf = conf.decode().replace("\r\n", "\n").replace("\n\n", "\n")
-					rule.write(conf)
-					print("wrote to agent.iptable")
-		
-				os.system("iptables-restore agent.iptable")
-				restore = os.popen("iptables-save").read()
-				conn.sendall(bytes(restore, 'UTF-8'))
-				conn.close()
-			else:
-				print(status)
-				os.system("iptables-save > agent.iptable")
-				time.sleep(1)
-				with open("./agent.iptable", "rb") as file1:
-					conf = file1.read(65535)
-					print(conf.decode("UTF-8"))
-					conn.send(conf)
-			
-			time.sleep(60)
+			try:
+				context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+				context.verify_mode = ssl.CERT_REQUIRED
+				context.load_verify_locations("./certs/cacert.crt")
+				conn = context.wrap_socket(s, server_hostname="FireStorm", server_side=False)
+				conn.connect((SERVER,PORT))
+				conn.sendall(b"$agent-config$")
+				conn.sendall(hostip)
+				status = conn.recv(1024)
+
+				if status == b"agent has configuration on file sending it now.":
+					print(status)
+					conf = conn.recv(65535)
+					with open("agent.iptable", "w") as rule:
+						conf = conf.decode().replace("\r\n", "\n").replace("\n\n", "\n")
+						rule.write(conf)
+						print("wrote to agent.iptable")
+
+					os.system("iptables-restore agent.iptable")
+					restore = os.popen("iptables-save").read()
+					conn.sendall(bytes(restore, 'UTF-8'))
+					conn.close()
+				else:
+					print(status)
+					os.system("iptables-save > agent.iptable")
+					time.sleep(1)
+					with open("./agent.iptable", "rb") as file1:
+						conf = file1.read(65535)
+						print(conf.decode("UTF-8"))
+						conn.send(conf)
+				time.sleep(60)
+			except:
+				time.sleep(60)
+				continue
 	#push agents current configurations to the server
 	def push_conf(SERVER):
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
