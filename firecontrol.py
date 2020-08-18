@@ -252,7 +252,7 @@ def main():
     parser.add_argument("-getconfig", help="request registered agents config file", action="store")
     parser.add_argument("-pushconfig", help="push new configuration file to agent", action="store")
     parser.add_argument("-server_stop", help="stops the fireserver", action="store_true")
-    parser.add_argument("--web", help="initiates A web graphical interface. The app provides a graphical ui for configuring firewalls", action="store_true")
+    #parser.add_argument("--web", help="initiates A web graphical interface. The app provides a graphical ui for configuring firewalls", action="store_true")
     parser.add_argument("-server", help="supply the fireserver IP", action="store")
     args = parser.parse_args()
     
