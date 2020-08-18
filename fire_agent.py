@@ -85,7 +85,8 @@ class fireagent:
 				time.sleep(60)
 				continue
 	#push agents current configurations to the server
-	def push_conf(SERVER):
+	def push_conf(SERVER,interface):
+		hostip = fireagent.getHostInfo(interface)
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 		context.verify_mode = ssl.CERT_REQUIRED
