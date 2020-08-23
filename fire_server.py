@@ -71,6 +71,7 @@ class fire_server:
                         agentsocket.send(agentconfig)
                 
                     agentsocket.close()
+                    self.RegCheck(agentip)
                 else:
                     agentsocket.sendall(b"fireserver has no configuration on file. pulling agent configuration now!") 
                     print("no config on file")
@@ -231,8 +232,11 @@ class fire_server:
         with open("./agents/registered.txt", "r+") as reg:
             
             agents = reg.readlines()
-            if agentip not in agents:
-                reg.write(agentip)
+            agentsList = []
+            for agent in agents:
+                agentsList.append(agent.strip()) 
+            if agentip not in agentsList:
+                reg.write(agentip + "\n")
                 print(f"added {agentip} to pre-registration file")
             else:
                 print("agent already pre-registered")       
