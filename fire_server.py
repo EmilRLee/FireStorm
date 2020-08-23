@@ -225,7 +225,7 @@ class fire_server:
         with open("./agents/registered.txt", "r") as reg:
             agents = reg.readlines()
             for agent in agents:
-                self.fire_agents.append(agent)
+                self.fire_agents.append(agent.strip())
                 print(f"added {agent} to registered agents")
 
     def RegCheck(self,agentip):
