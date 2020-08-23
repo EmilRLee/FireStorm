@@ -15,7 +15,7 @@ class fireagent:
 		for key, value in inet_addr.items():
 			if key == 'addr':
 				return bytes(value,'UTF-8')	
-		return ipaddress
+		#return ipaddress
 
 	def agentInit(SERVER,interface):
 		pollsig = b"$agent-poll$"
@@ -59,7 +59,7 @@ class fireagent:
 				conn.sendall(b"$agent-config$")
 				conn.sendall(hostip)
 				status = conn.recv(1024)
-
+				
 				if status == b"agent has configuration on file sending it now.":
 					print(status)
 					conf = conn.recv(65535)
@@ -67,7 +67,7 @@ class fireagent:
 						conf = conf.decode().replace("\r\n", "\n").replace("\n\n", "\n")
 						rule.write(conf)
 						print("wrote to agent.iptable")
-
+			
 					os.system("iptables-restore agent.iptable")
 					restore = os.popen("iptables-save").read()
 					conn.sendall(bytes(restore, 'UTF-8'))
@@ -81,7 +81,7 @@ class fireagent:
 						print(conf.decode("UTF-8"))
 						conn.send(conf)
 				time.sleep(60)
-			except:
+			except:	
 				time.sleep(60)
 				continue
 	#push agents current configurations to the server
@@ -130,10 +130,12 @@ class fireagent:
 					status = conn.recv(1024)
 					print("firecontroller msg ->" + repr(status.decode()))
 				conn.close()
+				time.sleep(60)
 			except socket.error or KeyboardInterrupt:
 				if KeyboardInterrupt:
 					sys.exit()
-				continue			
+				else:
+					continue			
 			time.sleep(60)
 
 
@@ -170,7 +172,10 @@ class fireagent:
 						os.popen(command.decode())
 					serversocket.close()
 			except:
-				continue
+				if KeyboardInterrupt:
+					sys.exit()
+				else:
+					continue
 				
 
 def main():
