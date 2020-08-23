@@ -268,9 +268,9 @@ def main():
         firecontrol.pushconfig(HOST,config)
     if args.server_stop:
         firecontrol.server_stop(HOST)
-    if args.web:
-        app.config['HOST'] = HOST
-        app.run() 
+    #if args.web:
+     #   app.config['HOST'] = HOST
+      #  app.run() 
         # --- testcase --> run webvars()        
 
 if __name__ == "__main__":
